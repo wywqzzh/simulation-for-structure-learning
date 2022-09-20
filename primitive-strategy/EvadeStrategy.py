@@ -10,22 +10,8 @@ from Utils.ComputationUtils import scaleOfNumber, makeChoice
 import argparse
 
 
-def argparser():
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--depth', type=int, default=10, help='The maximum depth of tree.')
-    parser.add_argument('--ignore_depth', type=int, default=0, help=' Ignore this depth of nodes.')
-    parser.add_argument('--ghost_attractive_thr', type=int, default=34, help='Ghost attractive threshold.')
-    parser.add_argument('--ghost_repulsive_thr', type=int, default=10, help='Ghost repulsive threshold.')
-    parser.add_argument('--reward_coeff', type=float, default=1.0, help='Coefficient for the reward.')
-    parser.add_argument('--risk_coeff', type=float, default=0.0, help='Coefficient for the risk.')
-    parser.add_argument('--randomness_coeff', type=float, default=0.0, help='Coefficient for the randomness.')
-    parser.add_argument('--laziness_coeff', type=float, default=0.0, help='Coefficient for the laziness.')
-    config = parser.parse_args()
-    return config
-
-
-class localStrategy:
-    def __init__(self, root, \
+class EvadeStrategy:
+    def __init__(self, root, ghost_name, \
                  energizer_data, bean_data, ghost_data, ghost_status, \
                  adjacent_data, locs_df, reward_amount, last_dir, \
                  args):
@@ -49,7 +35,6 @@ class localStrategy:
         :param last_dir:
         :param args:
         """
-
         # Parameter type check
         if not isinstance(root, tuple):
             raise TypeError("The root should be a 2-tuple, but got a {}.".format(type(root)))
@@ -57,13 +42,20 @@ class localStrategy:
             raise TypeError("The depth should be a integer, but got a {}.".format(type(args.depth)))
         if args.depth <= 0:
             raise ValueError("The depth should be a positive integer.")
+
+        # trade-off args
         self.args = args
-        self.last_dir = last_dir
         # Game status
-        self.gameStatus = {"energizer_data": energizer_data, "bean_data": bean_data, "ghost_data": ghost_data,
-                           "ghost_status": ghost_status, "existing_bean": bean_data,
-                           "existing_energizer": energizer_data}
-        # Other pre-computed data
+
+        self.gameStatus = {"energizer_data": energizer_data, "bean_data": bean_data, "existing_bean": bean_data,
+                           "existing_energizer": energizer_data, "last_dir": last_dir, "ghost_name": ghost_name}
+        if ghost_name == "blinky":
+            self.gameStatus.update({"ghost_status": [ghost_status[0]], "ghost_data": [ghost_data[0]]})
+        elif ghost_name == "clyde":
+            self.gameStatus.update({"ghost_status": [ghost_status[1]], "ghost_data": [ghost_data[1]]})
+        else:
+            raise ValueError("Undefined ghost name {}!".format(self.gameStatus["ghost_name"]))
+        # pre-computed map status data
         self.mapStatus = {
             "adjacent_data": adjacent_data,
             "locs_df": locs_df,
@@ -82,14 +74,11 @@ class localStrategy:
                                  cumulative_reward=0.0,
                                  cur_risk=00.,
                                  cumulative_risk=0.0,
-                                 existing_beans=copy.deepcopy(self.bean_data),
-                                 existing_energizers=copy.deepcopy(self.energizer_data),
-                                 ghost_status=copy.deepcopy(self.ghost_status),
+                                 existing_beans=copy.deepcopy(self.gameStatus["bean_data"]),
+                                 existing_energizers=copy.deepcopy(self.gameStatus["energizer_data"]),
+                                 ghost_status=copy.deepcopy(self.gameStatus["ghost_status"]),
                                  exact_reward_list=[],
-                                 ghost_potential_reward_list=[],
-                                 fruit_potential_reward_list=[],
                                  exact_risk_list=[],
-                                 potential_risk_list=[]
                                  )
         # TODO: add game status for the node
         # The current node
@@ -108,28 +97,7 @@ class localStrategy:
         existing_energizers = copy.deepcopy(self.current_node.existing_energizers)
         ghost_status = copy.deepcopy(self.current_node.ghost_status)
         exact_reward = 0.0
-        ghost_potential_reward = 0.0
-        # Bean reward
-        if isinstance(existing_beans, float):
-            exact_reward += 0.0
-        elif cur_position in existing_beans:
-            exact_reward += self.reward_amount[1]
-            existing_beans.remove(cur_position)
-        else:
-            exact_reward += 0.0
-        # Energizer reward
-        if isinstance(existing_energizers, float) or cur_position not in existing_energizers:
-            exact_reward += 0.0
-        elif cur_position in existing_energizers:
-            # Reward for eating the energizer
-            exact_reward += self.reward_amount[2]
-            existing_energizers.remove(cur_position)
-            # TODO: 改变ghost的状态
-            ghost_status = [4 if each != 3 else 3 for each in ghost_status]  # change ghost status
-        else:
-            exact_reward += 0.0
-
-        return exact_reward, ghost_potential_reward, existing_beans, existing_energizers, ghost_status
+        return exact_reward, existing_beans, existing_energizers, ghost_status
 
     def _computeRisk(self, cur_position):
         """
@@ -139,70 +107,19 @@ class localStrategy:
         """
         ghost_status = copy.deepcopy(self.current_node.ghost_status)
         # Compute ghost risk when ghosts are normal
-        ifscared1 = ghost_status[0] if not isinstance(ghost_status[0], float) else 0
-        ifscared2 = ghost_status[1] if not isinstance(ghost_status[1], float) else 0
+        ifscared = ghost_status[0] if not isinstance(ghost_status[0], float) else 0
         exact_risk = 0.0
-        potential_risk = 0.0
         # TODO: 改变ghost的状态
-        if ifscared1 <= 2 or ifscared2 <= 2:  # ghosts are normal; use "or" for dealing with dead ghosts
-            if 3 == ifscared1:
-                # Pacman is eaten
-                if cur_position == self.ghost_data[1]:
-                    exact_risk = -self.reward_amount[9]
-                    self.is_eaten = True
-                    exact_risk = 0.0  # TODO: for testing single ghost pessimistic
-                    return exact_risk, potential_risk
-                ghost_dist = self.locs_df[cur_position][self.ghost_data[1]]
-            elif 3 == ifscared2:
-                # Pacman is eaten
-                if cur_position == self.ghost_data[0]:
-                    exact_risk = -self.reward_amount[9]
-                    self.is_eaten = True
-                    # ZZH ################################################################
-                    exact_risk = 0.0
-                    # ZZH ################################################################
-                    return exact_risk, potential_risk
-                ghost_dist = self.locs_df[cur_position][self.ghost_data[0]]
-            else:
-                # Pacman is eaten
-                if cur_position == self.ghost_data[0] or cur_position == self.ghost_data[1]:
-                    exact_risk = -self.reward_amount[9]
-                    self.is_eaten = True
-
-                    if cur_position == self.ghost_data[1]:
-                        exact_risk = 0.0  # TODO: for testing single ghost pessimistic
-
-                    return exact_risk, potential_risk
-                # Potential risk
-                else:
-                    ghost_dist = min(
-                        self.locs_df[cur_position][self.ghost_data[0]],
-                        self.locs_df[cur_position][self.ghost_data[1]]
-                    )
-            if ghost_dist < self.ghost_repulsive_thr:
-                # risk = -self.reward_amount[9] * 1 / ghost_dist
-                # risk = -self.reward_amount[9] * (self.ghost_repulsive_thr / ghost_dist - 1)
-                # reward += self.reward_amount[int(self.reward_type)] * ( self.fruit_attractive_thr/ fruit_dist - 1)
-                R = self.reward_amount[8]
-                T = self.ghost_repulsive_thr
-                if ghost_dist <= (self.ghost_repulsive_thr / 2):
-                    potential_risk = -((-R / T) * ghost_dist + R)
-                else:
-                    potential_risk = -((R * T) / (2 * ghost_dist) - R / 2)
-            else:
-                pass
-        # Ghosts are not scared
-        else:
-            pass
-
-        # TODO: For excluding potential risk
-        potential_risk = 0.0
-        return exact_risk, potential_risk
+        if ifscared <= 2 and cur_position == self.gameStatus["ghost_data"][0]:
+            self.is_eaten = True
+            exact_risk = -self.mapStatus["reward_amount"][9]
+            print(exact_risk)
+        return exact_risk
 
     def _attachNode(self, cur_depth=0, ignore=False):
         if 0 == cur_depth:  # TODO: cur_depth is useless for now
             raise ValueError("The depth should not be 0!")
-        tmp_data = self.adjacent_data[self.current_node.name]
+        tmp_data = self.mapStatus["adjacent_data"][self.current_node.name]
         for each in ["left", "right", "up", "down"]:
             # do not walk on the wall or walk out of boundary
             # do not turn back
@@ -216,33 +133,25 @@ class localStrategy:
                 cur_pos = tmp_data[each]
                 if ignore:
                     exact_reward = 0.0
-                    ghost_potential_reward = 0.0
                     exact_risk = 0.0
-                    potential_risk = 0.0
                     existing_beans = copy.deepcopy(self.current_node.existing_beans)
                     existing_energizers = copy.deepcopy(self.current_node.existing_energizers)
                     ghost_status = copy.deepcopy(self.current_node.ghost_status)
                 else:
                     # Compute reward
-                    exact_reward, ghost_potential_reward, \
-                    existing_beans, existing_energizers, ghost_status = self._computeReward(cur_pos)
+                    exact_reward, existing_beans, existing_energizers, ghost_status = self._computeReward(cur_pos)
                     # Compute risk
                     # if the position is visited before, do not add up the risk to cumulative
                     if cur_pos in [each.name for each in self.current_node.path]:
                         exact_risk = 0.0
-                        potential_risk = 0.0
                     else:
-                        exact_risk, potential_risk = self._computeRisk(cur_pos)
+                        exact_risk = self._computeRisk(cur_pos)
                         # Construct the new node
             exact_reward_list = copy.deepcopy(self.current_node.exact_reward_list)
-            ghost_potential_reward_list = copy.deepcopy(self.current_node.ghost_potential_reward_list)
             exact_risk_list = copy.deepcopy(self.current_node.exact_risk_list)
-            potential_risk_list = copy.deepcopy(self.current_node.potential_risk_list)
 
             exact_reward_list.append(exact_reward)
-            ghost_potential_reward_list.append(ghost_potential_reward)
             exact_risk_list.append(exact_risk)
-            potential_risk_list.append(potential_risk)
 
             new_node = anytree.Node(
                 cur_pos,
@@ -250,28 +159,22 @@ class localStrategy:
                 dir_from_parent=each,
                 cur_utility={
                     "exact_reward": exact_reward,
-                    "ghost_potential_reward": ghost_potential_reward,
                     "exact_risk": exact_risk,
-                    "potential_risk": potential_risk
                 },
                 cur_reward={
                     "exact_reward": exact_reward,
-                    "ghost_potential_reward": ghost_potential_reward,
                 },
                 cur_risk={
                     "exact_risk": exact_risk,
-                    "potential_risk": potential_risk
                 },
                 cumulative_reward=self.current_node.cumulative_reward + exact_reward,
                 cumulative_risk=self.current_node.cumulative_risk + exact_risk,
-                cumulative_utility=self.current_node.cumulative_utility + self.reward_coeff * exact_reward + self.risk_coeff * exact_risk,
+                cumulative_utility=self.current_node.cumulative_utility + self.args.reward_coeff * exact_reward + self.args.risk_coeff * exact_risk,
                 existing_beans=existing_beans,
                 existing_energizers=existing_energizers,
                 ghost_status=ghost_status,
                 exact_reward_list=exact_reward_list,
-                ghost_potential_reward_list=ghost_potential_reward_list,
                 exact_risk_list=exact_risk_list,
-                potential_risk_list=potential_risk_list,
             )
             # If the Pacman is eaten, end this path
             if self.is_eaten:
@@ -286,14 +189,14 @@ class localStrategy:
         """
         # construct the first layer firstly (depth = 1)
         self._attachNode(cur_depth=1,
-                         ignore=True if self.ignore_depth > 0 else False)  # attach all children of the root (depth = 1)
+                         ignore=True if self.args.ignore_depth > 0 else False)  # attach all children of the root (depth = 1)
         self.node_queue.append(None)  # the end of layer with depth = 1
         self.node_queue.popleft()
         self.current_node = self.node_queue.popleft()
         cur_depth = 2
         # construct the other parts
-        while cur_depth <= self.depth:
-            if cur_depth <= self.ignore_depth:
+        while cur_depth <= self.args.depth:
+            if cur_depth <= self.args.ignore_depth:
                 ignore = True
             else:
                 ignore = False
@@ -308,8 +211,7 @@ class localStrategy:
 
         # Add potential reward/risk for every path
         for each in self.root.leaves:
-            each.path_utility = (each.cumulative_utility + self.reward_coeff * (
-                np.mean(each.ghost_potential_reward_list)) + self.risk_coeff * np.mean(each.potential_risk_list))
+            each.path_utility = each.cumulative_utility
         # Find the best path with the highest utility
         best_leaf = self.root.leaves[0]
         for leaf in self.root.leaves:
@@ -333,21 +235,37 @@ class localStrategy:
         available_directions = [each.dir_from_parent for each in self.root.children]
         available_dir_utility = np.array([self._descendantUtility(each) for each in self.root.children])
         for index, each in enumerate(available_directions):
-            self.Q_value[self.dir_list.index(each)] = available_dir_utility[index]
+            self.Q_value[self.mapStatus["dir_list"].index(each)] = available_dir_utility[index]
         self.Q_value = np.array(self.Q_value)
-        available_directions_index = [self.dir_list.index(each) for each in available_directions]
+        available_directions_index = [self.mapStatus["dir_list"].index(each) for each in available_directions]
         # self.Q_value[available_directions_index] += 1.0 # avoid 0 utility
         # Add randomness and laziness
         Q_scale = scaleOfNumber(np.max(np.abs(self.Q_value)))
         # randomness = np.random.normal(loc=0, scale=0.1, size=len(available_directions_index)) * Q_scale
         randomness = np.random.uniform(low=0, high=0.1, size=len(available_directions_index)) * Q_scale
-        self.Q_value[available_directions_index] += (self.randomness_coeff * randomness)
-        if self.last_dir is not None and self.dir_list.index(self.last_dir) in available_directions_index:
-            self.Q_value[self.dir_list.index(self.last_dir)] += (self.laziness_coeff * Q_scale)
+        self.Q_value[available_directions_index] += (self.args.randomness_coeff * randomness)
+        if self.gameStatus["last_dir"] is not None and self.mapStatus["dir_list"].index(
+                self.gameStatus["last_dir"]) in available_directions_index:
+            self.Q_value[self.mapStatus["dir_list"].index(self.gameStatus["last_dir"])] += (
+                    self.args.laziness_coeff * Q_scale)
         if return_Q:
             return best_path[0][1], self.Q_value
         else:
             return best_path[0][1]
+
+
+def argparser():
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--depth', type=int, default=10, help='The maximum depth of tree.')
+    parser.add_argument('--ignore_depth', type=int, default=0, help=' Ignore this depth of nodes.')
+    parser.add_argument('--ghost_attractive_thr', type=int, default=34, help='Ghost attractive threshold.')
+    parser.add_argument('--ghost_repulsive_thr', type=int, default=10, help='Ghost repulsive threshold.')
+    parser.add_argument('--reward_coeff', type=float, default=1.0, help='Coefficient for the reward.')
+    parser.add_argument('--risk_coeff', type=float, default=0.0, help='Coefficient for the risk.')
+    parser.add_argument('--randomness_coeff', type=float, default=0.0, help='Coefficient for the randomness.')
+    parser.add_argument('--laziness_coeff', type=float, default=0.0, help='Coefficient for the laziness.')
+    config = parser.parse_args()
+    return config
 
 
 if __name__ == '__main__':
@@ -375,17 +293,35 @@ if __name__ == '__main__':
                  (19, 30),
                  (22, 30), (27, 30), (2, 32), (5, 33), (9, 33), (12, 33), (14, 33), (15, 33), (16, 33), (17, 33),
                  (18, 33),
-                 (20, 33), (24, 33), (25, 33), (26, 33)]
+                 (20, 33), (24, 33), (25, 33), (26, 33), (15, 27)]
     last_dir = None
 
-    args = argparser()
-    # Local agent
-    agent = localStrategy(root=cur_pos,
-                          energizer_data=energizer_data, bean_data=bean_data, ghost_data=ghost_data,
-                          ghost_status=ghost_status,
-                          adjacent_data=adjacent_data, locs_df=locs_df, reward_amount=reward_amount, last_dir=last_dir,
-                          args=args
-                          )
-    _, Q = agent.nextDir(return_Q=True)
-    choice = agent.dir_list[makeChoice(Q)]
-    print("Local Choice : ", choice, Q)
+    import pickle
+
+    with open("../Data/10_trial_data_Omega.pkl", "rb") as file:
+        result = pickle.load(file)
+    for index in range(len(result)):
+        print(index)
+        cur_pos = result["pacmanPos"][index]
+        ghost_data = [result["ghost1Pos"][index], result["ghost2Pos"][index]]
+        ghost_status = [result["ifscared1"][index], result["ifscared2"][index]]
+        energizer_data = result["energizers"][index]
+        bean_data = result["beans"][index]
+        last_dir = result["pacman_dir"][index]
+
+        args = argparser()
+        args.depth = 5
+        args.ghost_attractive_thr = 34
+        args.ghost_repulsive_thr = 34
+        args.reward_coeff = 0.0
+        args.risk_coeff = 1.0
+        # Local agent
+        agent = EvadeStrategy(root=cur_pos, ghost_name="blinky",
+                              energizer_data=energizer_data, bean_data=bean_data, ghost_data=ghost_data,
+                              ghost_status=ghost_status,
+                              adjacent_data=adjacent_data, locs_df=locs_df, reward_amount=reward_amount, last_dir=last_dir,
+                              args=args
+                              )
+        _, Q = agent.nextDir(return_Q=True)
+        choice = agent.mapStatus["dir_list"][makeChoice(Q)]
+        print("Local Choice : ", choice, Q)
