@@ -87,6 +87,13 @@ class EvadeStrategy:
         self.node_queue = deque()
         self.node_queue.append(self.root)
 
+    def set_state(self, root, energizer_data, bean_data, ghost_data, ghost_status, last_dir):
+        if not isinstance(root, tuple):
+            raise TypeError("The root should be a 2-tuple, but got a {}.".format(type(root)))
+        self.gameStatus = {"energizer_data": energizer_data, "bean_data": bean_data, "ghost_data": ghost_data,
+                           "ghost_status": ghost_status, "existing_bean": bean_data,
+                           "existing_energizer": energizer_data, "last_dir": last_dir}
+
     def _computeReward(self, cur_position):
         """
         计算reward,在local中只考虑豆子和energizers数

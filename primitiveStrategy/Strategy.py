@@ -1,54 +1,25 @@
-import numpy as np
-import anytree
-from collections import deque
-from copy import deepcopy
-import copy
-import sys
-
-sys.path.append("../Utils")
-from Utils.ComputationUtils import scaleOfNumber, makeChoice
 import argparse
+import copy
+from collections import deque
+
+import anytree
+import numpy as np
+
+from Utils.ComputationUtils import scaleOfNumber
 
 
-class approachStrategy:
-    def __init__(self, root, \
-                 energizer_data, bean_data, ghost_data, ghost_status, \
-                 adjacent_data, locs_df, reward_amount, last_dir, \
+class Strategy:
+
+    def __init__(self, strategy_type, adjacent_data, locs_df, reward_amount, \
                  args):
-        """
-        This class construct a tree to campute the unitity
-        # The root node is the path starting point.
-        # Other tree nodes should contain:
-        #   (1) location ("name")
-        #   (2) parent location ("parent")
-        #   (3) the direction from its to parent to itself ("dir_from_parent")
-        #   (4) utility of this node, reward and  risk are separated ("cur_reward", "cur_risk", "cur_utility")
-        #   (5) the cumulative utility so far, reward and risk are separated ("cumulative_reward", "cumulative_risk", "cumulative_utility")
-        :param root:
-        :param energizer_data:
-        :param bean_data:
-        :param ghost_data:
-        :param ghost_status:
-        :param adjacent_data:
-        :param locs_df:
-        :param reward_amount:
-        :param last_dir:
-        :param args:
-        """
-        # Parameter type check
-        if not isinstance(root, tuple):
-            raise TypeError("The root should be a 2-tuple, but got a {}.".format(type(root)))
         if not isinstance(args.depth, int):
             raise TypeError("The depth should be a integer, but got a {}.".format(type(args.depth)))
         if args.depth <= 0:
             raise ValueError("The depth should be a positive integer.")
 
+        self.strategy_type = strategy_type
         # trade-off args
         self.args = args
-        # Game status
-        self.gameStatus = {"energizer_data": energizer_data, "bean_data": bean_data, "ghost_data": ghost_data,
-                           "ghost_status": ghost_status, "existing_bean": bean_data,
-                           "existing_energizer": energizer_data, "last_dir": last_dir}
         # pre-computed map status data
         self.mapStatus = {
             "adjacent_data": adjacent_data,
@@ -61,6 +32,15 @@ class approachStrategy:
         # Pacman is eaten? If so, the path will be ended
         self.is_eaten = False
 
+    def set_state(self, root, energizer_data, bean_data, ghost_data, ghost_status, last_dir):
+        if not isinstance(root, tuple):
+            raise TypeError("The root should be a 2-tuple, but got a {}.".format(type(root)))
+
+        self.gameStatus = {"energizer_data": energizer_data, "bean_data": bean_data, "ghost_data": ghost_data,
+                           "ghost_status": ghost_status, "existing_bean": bean_data,
+                           "existing_energizer": energizer_data, "last_dir": last_dir}
+        self.Q_value = [0, 0, 0, 0]
+        self.is_eaten = False
         self.root = anytree.Node(root,
                                  cur_utility=0.0,
                                  cumulative_utility=0.0,
@@ -91,18 +71,37 @@ class approachStrategy:
         existing_energizers = copy.deepcopy(self.current_node.existing_energizers)
         ghost_status = copy.deepcopy(self.current_node.ghost_status)
         exact_reward = 0.0
-        # TODO:改变ghost的状态
-        if isinstance(self.gameStatus["ghost_data"], float) or cur_position not in self.gameStatus["ghost_data"] \
-                or np.all(np.array(ghost_status) == 3):
-            exact_reward += 0.0
-        for index, ghost in enumerate(self.gameStatus["ghost_data"]):
-            if ghost_status[index] != 3:
-                if cur_position == ghost:
-                    exact_reward += self.mapStatus["reward_amount"][8]
-                    if ghost_status[index] > 3:
-                        ghost_status[index] = 3
-                    else:
-                        self.is_eaten = True
+        # Bean reward
+        if self.strategy_type == "local" or self.strategy_type == "global":
+            if isinstance(existing_beans, float):
+                exact_reward += 0.0
+            elif cur_position in existing_beans:
+                exact_reward += self.mapStatus["reward_amount"][1]
+                existing_beans.remove(cur_position)
+        # energizer reward
+        if self.strategy_type == "energizer":
+            if isinstance(existing_energizers, float) or cur_position not in existing_energizers:
+                exact_reward += 0.0
+            elif cur_position in existing_energizers:
+                # Reward for eating the energizer
+                exact_reward += self.mapStatus["reward_amount"][2]
+                existing_energizers.remove(cur_position)
+                # TODO:改变ghost的状态
+                ghost_status = [4 if each != 3 else 3 for each in ghost_status]  # change ghost status
+        # eat ghost reward
+        if self.strategy_type == "approach":
+            # TODO:改变ghost的状态
+            if isinstance(self.gameStatus["ghost_data"], float) or cur_position not in self.gameStatus["ghost_data"] \
+                    or np.all(np.array(ghost_status) == 3):
+                exact_reward += 0.0
+            for index, ghost in enumerate(self.gameStatus["ghost_data"]):
+                if ghost_status[index] != 3:
+                    if cur_position == ghost:
+                        exact_reward += self.mapStatus["reward_amount"][8]
+                        if ghost_status[index] > 3:
+                            ghost_status[index] = 3
+                        else:
+                            self.is_eaten = True
         return exact_reward, existing_beans, existing_energizers, ghost_status
 
     def _computeRisk(self, cur_position):
@@ -119,8 +118,12 @@ class approachStrategy:
         # TODO: 改变ghost的状态
         if ifscared1 <= 2 and cur_position == self.gameStatus["ghost_data"][0]:
             self.is_eaten = True
+            if self.strategy_type == "evade":
+                exact_risk = -self.mapStatus["reward_amount"][9]
         if ifscared2 <= 2 and cur_position == self.gameStatus["ghost_data"][1]:
             self.is_eaten = True
+            if self.strategy_type == "evade":
+                exact_risk = -self.mapStatus["reward_amount"][9]
         return exact_risk
 
     def _attachNode(self, cur_depth=0, ignore=False):
@@ -269,8 +272,8 @@ def argparser():
     parser.add_argument('--ghost_repulsive_thr', type=int, default=10, help='Ghost repulsive threshold.')
     parser.add_argument('--reward_coeff', type=float, default=1.0, help='Coefficient for the reward.')
     parser.add_argument('--risk_coeff', type=float, default=0.0, help='Coefficient for the risk.')
-    parser.add_argument('--randomness_coeff', type=float, default=0.0, help='Coefficient for the randomness.')
-    parser.add_argument('--laziness_coeff', type=float, default=0.0, help='Coefficient for the laziness.')
+    parser.add_argument('--randomness_coeff', type=float, default=1.0, help='Coefficient for the randomness.')
+    parser.add_argument('--laziness_coeff', type=float, default=1.0, help='Coefficient for the laziness.')
     config = parser.parse_args()
     return config
 
@@ -279,35 +282,54 @@ if __name__ == '__main__':
     from Utils.FileUtils import readAdjacentMap, readLocDistance, readRewardAmount, readAdjacentPath
     from Utils.ComputationUtils import makeChoice
 
-    # Read data
     locs_df = readLocDistance("../Data/constant/dij_distance_map.csv")
     adjacent_data = readAdjacentMap("../Data/constant/adjacent_map.csv")
     adjacent_path = readAdjacentPath("../Data/constant/dij_distance_map.csv")
     reward_amount = readRewardAmount()
-    print("Finished reading auxiliary data!")
-    # An example of data
-    cur_pos = (14, 27)
-    ghost_data = [(13, 27), (15, 27)]
-    ghost_status = [1, 1]
-    energizer_data = [(7, 5), (17, 5), (7, 26), (24, 30)]
-    bean_data = [(2, 5), (4, 5), (5, 5), (16, 5), (18, 5), (20, 5), (24, 5), (25, 5), (16, 6), (7, 7), (13, 7), (27, 7),
-                 (2, 8), (16, 8), (22, 8), (2, 9), (6, 9), (8, 9), (9, 9), (13, 9), (14, 9), (16, 9), (17, 9), (19, 9),
-                 (24, 9), (26, 9), (27, 9), (10, 10), (22, 10), (2, 11), (10, 11), (22, 11), (5, 12), (7, 12), (22, 12),
-                 (22, 13), (7, 14), (13, 14), (16, 14), (7, 15), (7, 17), (22, 17), (7, 19), (10, 23), (2, 24), (3, 24),
-                 (6, 24), (8, 24), (9, 24), (13, 24), (17, 24), (20, 24), (22, 24), (25, 24), (7, 25), (22, 25),
-                 (2, 26),
-                 (27, 27), (2, 28), (27, 28), (10, 29), (22, 29), (2, 30), (7, 30), (11, 30), (16, 30), (18, 30),
-                 (19, 30),
-                 (22, 30), (27, 30), (2, 32), (5, 33), (9, 33), (12, 33), (14, 33), (15, 33), (16, 33), (17, 33),
-                 (18, 33),
-                 (20, 33), (24, 33), (25, 33), (26, 33), (15, 27)]
-    last_dir = None
 
     import pickle
 
     with open("../Data/10_trial_data_Omega.pkl", "rb") as file:
         result = pickle.load(file)
+    strategy_type = "evade"
 
+    args = argparser()
+    if strategy_type == "local":
+        args.depth = 10
+        args.ghost_attractive_thr = 10
+        args.ghost_repulsive_thr = 10
+        args.reward_coeff = 1.0
+        args.risk_coeff = 0.0
+    elif strategy_type == "global":
+        args.depth = 15
+        args.ignore_depth = 5
+        args.ghost_attractive_thr = 34
+        args.ghost_repulsive_thr = 34
+        args.reward_coeff = 1.0
+        args.risk_coeff = 0.0
+    elif strategy_type == "evade":
+        args.depth = 5
+        args.ignore_depth = 0
+        args.ghost_attractive_thr = 34
+        args.ghost_repulsive_thr = 34
+        args.reward_coeff = 0.0
+        args.risk_coeff = 1.0
+    elif strategy_type == "energizer":
+        args.depth = 5
+        args.ignore_depth = 0
+        args.ghost_attractive_thr = 0
+        args.ghost_repulsive_thr = 0
+        args.reward_coeff = 1.0
+        args.risk_coeff = 0.0
+    elif strategy_type == "approach":
+        args.depth = 10
+        args.ignore_depth = 0
+        args.ghost_attractive_thr = 10
+        args.ghost_repulsive_thr = 10
+        args.reward_coeff = 1.0
+        args.risk_coeff = 0.0
+
+    strategy = Strategy(strategy_type, adjacent_data, locs_df, reward_amount, args)
     for index in range(len(result)):
         print(index)
         cur_pos = result["pacmanPos"][index]
@@ -317,21 +339,7 @@ if __name__ == '__main__':
         bean_data = result["beans"][index]
         last_dir = result["pacman_dir"][index]
 
-        args = argparser()
-        args.depth = 10
-        args.ghost_attractive_thr = 10
-        args.ghost_repulsive_thr =10
-        args.reward_coeff = 1.0
-        args.risk_coeff = 0.0
-
-        # Local agent
-        agent = approachStrategy(root=cur_pos,
-                                  energizer_data=energizer_data, bean_data=bean_data, ghost_data=ghost_data,
-                                  ghost_status=ghost_status,
-                                  adjacent_data=adjacent_data, locs_df=locs_df, reward_amount=reward_amount,
-                                  last_dir=last_dir,
-                                  args=args
-                                  )
-        _, Q = agent.nextDir(return_Q=True)
-        choice = agent.mapStatus["dir_list"][makeChoice(Q)]
-        print("Local Choice : ", choice, Q)
+        strategy.set_state(cur_pos, energizer_data, bean_data, ghost_data, ghost_status, last_dir)
+        _, Q = strategy.nextDir(return_Q=True)
+        choice = strategy.mapStatus["dir_list"][makeChoice(Q)]
+        print(strategy_type + " Choice : ", choice, Q)

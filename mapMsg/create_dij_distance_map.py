@@ -12,7 +12,7 @@ import networkx as nx
 # In[2]:
 
 
-T = pd.read_pickle("../Data/mapMsg/adjacent_map_fmri.pickle")
+T = pd.read_csv("../Data/mapMsg/adjacent_map.csv")
 G = nx.Graph()
 G.add_nodes_from(T.pos)
 for i in range(0,T.shape[0]):

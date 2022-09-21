@@ -10,7 +10,7 @@ from Utils.ComputationUtils import scaleOfNumber, makeChoice
 import argparse
 
 
-class energizerStrategy:
+class approachStrategy:
     def __init__(self, root, \
                  energizer_data, bean_data, ghost_data, ghost_status, \
                  adjacent_data, locs_df, reward_amount, last_dir, \
@@ -81,6 +81,13 @@ class energizerStrategy:
         self.node_queue = deque()
         self.node_queue.append(self.root)
 
+    def set_state(self, root, energizer_data, bean_data, ghost_data, ghost_status, last_dir):
+        if not isinstance(root, tuple):
+            raise TypeError("The root should be a 2-tuple, but got a {}.".format(type(root)))
+        self.gameStatus = {"energizer_data": energizer_data, "bean_data": bean_data, "ghost_data": ghost_data,
+                           "ghost_status": ghost_status, "existing_bean": bean_data,
+                           "existing_energizer": energizer_data, "last_dir": last_dir}
+
     def _computeReward(self, cur_position):
         """
         计算reward,在local中只考虑豆子和energizers数
@@ -91,17 +98,18 @@ class energizerStrategy:
         existing_energizers = copy.deepcopy(self.current_node.existing_energizers)
         ghost_status = copy.deepcopy(self.current_node.ghost_status)
         exact_reward = 0.0
-        # Bean reward
-        if isinstance(existing_energizers, float) or cur_position not in existing_energizers:
+        # TODO:改变ghost的状态
+        if isinstance(self.gameStatus["ghost_data"], float) or cur_position not in self.gameStatus["ghost_data"] \
+                or np.all(np.array(ghost_status) == 3):
             exact_reward += 0.0
-        elif cur_position in existing_energizers:
-            # Reward for eating the energizer
-            exact_reward += self.mapStatus["reward_amount"][2]
-            existing_energizers.remove(cur_position)
-            # TODO:改变ghost的状态
-            ghost_status = [4 if each != 3 else 3 for each in ghost_status]  # change ghost status
-        else:
-            exact_reward += 0.0
+        for index, ghost in enumerate(self.gameStatus["ghost_data"]):
+            if ghost_status[index] != 3:
+                if cur_position == ghost:
+                    exact_reward += self.mapStatus["reward_amount"][8]
+                    if ghost_status[index] > 3:
+                        ghost_status[index] = 3
+                    else:
+                        self.is_eaten = True
         return exact_reward, existing_beans, existing_energizers, ghost_status
 
     def _computeRisk(self, cur_position):
@@ -317,20 +325,20 @@ if __name__ == '__main__':
         last_dir = result["pacman_dir"][index]
 
         args = argparser()
-        args.depth = 5
-        args.ghost_attractive_thr = 0
-        args.ghost_repulsive_thr = 0
+        args.depth = 10
+        args.ghost_attractive_thr = 10
+        args.ghost_repulsive_thr = 10
         args.reward_coeff = 1.0
         args.risk_coeff = 0.0
 
         # Local agent
-        agent = energizerStrategy(root=cur_pos,
-                                  energizer_data=energizer_data, bean_data=bean_data, ghost_data=ghost_data,
-                                  ghost_status=ghost_status,
-                                  adjacent_data=adjacent_data, locs_df=locs_df, reward_amount=reward_amount,
-                                  last_dir=last_dir,
-                                  args=args
-                                  )
+        agent = approachStrategy(root=cur_pos,
+                                 energizer_data=energizer_data, bean_data=bean_data, ghost_data=ghost_data,
+                                 ghost_status=ghost_status,
+                                 adjacent_data=adjacent_data, locs_df=locs_df, reward_amount=reward_amount,
+                                 last_dir=last_dir,
+                                 args=args
+                                 )
         _, Q = agent.nextDir(return_Q=True)
         choice = agent.mapStatus["dir_list"][makeChoice(Q)]
         print("Local Choice : ", choice, Q)
