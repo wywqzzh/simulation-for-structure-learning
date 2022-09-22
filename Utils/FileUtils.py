@@ -82,11 +82,13 @@ def readLocDistance(filename):
             dict_locs_df[each[0]] = {}
         dict_locs_df[each[0]][each[1]] = each[2]
     # correct the distance between two ends of the tunnel
-    dict_locs_df[(0, 18)][(29, 18)] = 1
-    # dict_locs_df[(0, 18)][(30, 18)] = 1
-    dict_locs_df[(0, 18)][(1, 18)] = 1
-    dict_locs_df[(29, 18)][(0, 18)] = 1
-    dict_locs_df[(29, 18)][(28, 18)] = 1
+    ###########################################################################
+    # dict_locs_df[(0, 18)][(29, 18)] = 1
+    # # dict_locs_df[(0, 18)][(30, 18)] = 1
+    # dict_locs_df[(0, 18)][(1, 18)] = 1
+    # dict_locs_df[(29, 18)][(0, 18)] = 1
+    # dict_locs_df[(29, 18)][(28, 18)] = 1
+    ###########################################################################
     return dict_locs_df
 
 

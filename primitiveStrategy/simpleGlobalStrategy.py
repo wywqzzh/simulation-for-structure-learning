@@ -43,15 +43,11 @@ class simpleGlobalStrategy:
         }
         # Utility (Q-value) for every direction
 
-    def set_state(self, root, energizer_data, bean_data, ghost_data, ghost_status, last_dir):
+    def set_state(self,gameStatus):
 
-        if not isinstance(root, tuple):
-            raise TypeError("The root should be a 2-tuple, but got a {}.".format(type(root)))
-
-        self.gameStatus = {"cur_pos": root, "energizer_data": energizer_data, "bean_data": bean_data,
-                           "ghost_data": ghost_data,
-                           "ghost_status": ghost_status, "existing_bean": bean_data,
-                           "existing_energizer": energizer_data, "last_dir": last_dir}
+        self.gameStatus = gameStatus
+        self.gameStatus.update({"existing_bean": deepcopy(gameStatus["bean_data"]),
+                                "existing_energizer": deepcopy(gameStatus["energizer_data"]),"cur_pos":gameStatus["PacmanPos"]})
         self.Q_value = [0, 0, 0, 0]
 
         self.available_dir = []

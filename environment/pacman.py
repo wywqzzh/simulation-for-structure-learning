@@ -602,7 +602,10 @@ def readCommand(argv):
         args['numTraining'] = options.numTraining
         if 'numTraining' not in agentOpts:
             agentOpts['numTraining'] = options.numTraining
-    pacman = pacmanType(**agentOpts)  # Instantiate Pacman with agentArgs
+    if options.pacman == "singleStartegyAgent":
+        pacman = pacmanType(options.layout, **agentOpts)  # Instantiate Pacman with agentArgs
+    else:
+        pacman = pacmanType(**agentOpts)
     args['pacman'] = pacman
 
     # Don't display training games

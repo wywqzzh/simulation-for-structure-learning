@@ -6,6 +6,7 @@ import anytree
 import numpy as np
 
 from Utils.ComputationUtils import scaleOfNumber
+from copy import deepcopy
 
 
 class Strategy:
@@ -32,16 +33,17 @@ class Strategy:
         # Pacman is eaten? If so, the path will be ended
         self.is_eaten = False
 
-    def set_state(self, root, energizer_data, bean_data, ghost_data, ghost_status, last_dir):
-        if not isinstance(root, tuple):
-            raise TypeError("The root should be a 2-tuple, but got a {}.".format(type(root)))
+    def set_state(self, gameStatus):
 
-        self.gameStatus = {"energizer_data": energizer_data, "bean_data": bean_data, "ghost_data": ghost_data,
-                           "ghost_status": ghost_status, "existing_bean": bean_data,
-                           "existing_energizer": energizer_data, "last_dir": last_dir}
+        self.gameStatus = gameStatus
+        self.gameStatus.update({"existing_bean": deepcopy(gameStatus["bean_data"]),
+                                "existing_energizer": deepcopy(gameStatus["energizer_data"])})
+        # self.gameStatus = {"energizer_data": energizer_data, "bean_data": bean_data, "ghost_data": ghost_data,
+        #                    "ghost_status": ghost_status, "existing_bean": bean_data,
+        #                    "existing_energizer": energizer_data, "last_dir": last_dir}
         self.Q_value = [0, 0, 0, 0]
         self.is_eaten = False
-        self.root = anytree.Node(root,
+        self.root = anytree.Node(gameStatus["PacmanPos"],
                                  cur_utility=0.0,
                                  cumulative_utility=0.0,
                                  cur_reward=0.0,
@@ -87,19 +89,19 @@ class Strategy:
                 exact_reward += self.mapStatus["reward_amount"][2]
                 existing_energizers.remove(cur_position)
                 # TODO:改变ghost的状态
-                ghost_status = [4 if each != 3 else 3 for each in ghost_status]  # change ghost status
+                ghost_status = [2 if each != 1 else 1 for each in ghost_status]  # change ghost status
         # eat ghost reward
         if self.strategy_type == "approach":
             # TODO:改变ghost的状态
             if isinstance(self.gameStatus["ghost_data"], float) or cur_position not in self.gameStatus["ghost_data"] \
-                    or np.all(np.array(ghost_status) == 3):
+                    or np.all(np.array(ghost_status) == 1):
                 exact_reward += 0.0
             for index, ghost in enumerate(self.gameStatus["ghost_data"]):
-                if ghost_status[index] != 3:
+                if ghost_status[index] != 1:
                     if cur_position == ghost:
                         exact_reward += self.mapStatus["reward_amount"][8]
-                        if ghost_status[index] > 3:
-                            ghost_status[index] = 3
+                        if ghost_status[index] > 1:
+                            ghost_status[index] = 1
                         else:
                             self.is_eaten = True
         return exact_reward, existing_beans, existing_energizers, ghost_status
@@ -116,11 +118,11 @@ class Strategy:
         ifscared2 = ghost_status[1] if not isinstance(ghost_status[1], float) else 0
         exact_risk = 0.0
         # TODO: 改变ghost的状态
-        if ifscared1 <= 2 and cur_position == self.gameStatus["ghost_data"][0]:
+        if ifscared1 == 0 and cur_position == self.gameStatus["ghost_data"][0]:
             self.is_eaten = True
             if self.strategy_type == "evade":
                 exact_risk = -self.mapStatus["reward_amount"][9]
-        if ifscared2 <= 2 and cur_position == self.gameStatus["ghost_data"][1]:
+        if ifscared2 == 0 and cur_position == self.gameStatus["ghost_data"][1]:
             self.is_eaten = True
             if self.strategy_type == "evade":
                 exact_risk = -self.mapStatus["reward_amount"][9]
@@ -246,6 +248,9 @@ class Strategy:
         available_dir_utility = np.array([self._descendantUtility(each) for each in self.root.children])
         for index, each in enumerate(available_directions):
             self.Q_value[self.mapStatus["dir_list"].index(each)] = available_dir_utility[index]
+        unavailable_directions = [each for each in self.mapStatus["dir_list"] if each not in available_directions]
+        for each in unavailable_directions:
+            self.Q_value[self.mapStatus["dir_list"].index(each)] = -np.inf
         self.Q_value = np.array(self.Q_value)
         available_directions_index = [self.mapStatus["dir_list"].index(each) for each in available_directions]
         # self.Q_value[available_directions_index] += 1.0 # avoid 0 utility

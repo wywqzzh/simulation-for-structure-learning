@@ -120,7 +120,7 @@ def create_dij_distance_map(map_name):
 
 
 if __name__ == '__main__':
-    filename = "../environment/layouts/smallGrid.lay"
+    filename = "../environment/layouts/mediumClassicEvade.lay"
     runMapConst(filename)
     create_adjacent_map(filename.split("/")[-1][:-4])
     create_dij_distance_map(filename.split("/")[-1][:-4])
