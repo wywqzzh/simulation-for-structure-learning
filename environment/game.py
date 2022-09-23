@@ -83,9 +83,11 @@ class Configuration:
     horizontally and y increases vertically.  Therefore, north is the direction of increasing y, or (0,1).
     """
 
-    def __init__(self, pos, direction):
+    def __init__(self, pos, direction, h, w):
         self.pos = pos
         self.direction = direction
+        self.h = h
+        self.w = w
 
     def getPosition(self):
         return (self.pos)
@@ -123,7 +125,7 @@ class Configuration:
         direction = Actions.vectorToDirection(vector)
         if direction == Directions.STOP:
             direction = self.direction  # There is no stop direction
-        return Configuration((x + dx, y + dy), direction)
+        return Configuration(((x + dx) % self.w, y + dy), direction, self.h, self.w)
 
 
 class AgentState:
@@ -367,7 +369,7 @@ class Actions:
         for dir, vec in Actions._directionsAsList:
             dx, dy = vec
             next_y = y_int + dy
-            next_x = x_int + dx
+            next_x = (x_int + dx) % len(walls.data[0])
             if not walls[next_x][next_y]:
                 possible.append(dir)
 
@@ -534,7 +536,10 @@ class GameStateData:
         self.layout = layout
         self.score = 0
         self.scoreChange = 0
-
+        ############################################
+        h = len(self.layout.layoutText)
+        w = len(self.layout.layoutText[0])
+        ############################################
         self.agentStates = []
         numGhosts = 0
         for isPacman, pos in layout.agentPositions:
@@ -544,7 +549,7 @@ class GameStateData:
                 else:
                     numGhosts += 1
             self.agentStates.append(AgentState(
-                Configuration(pos, Directions.STOP), isPacman))
+                Configuration(pos, Directions.STOP, h, w), isPacman))
         self._eaten = [False for a in self.agentStates]
 
 
@@ -805,4 +810,4 @@ class Game:
                     self.unmute()
                     return
         self.display.finish()
-        return state_sequence, action_sequence,reward_sequence
+        return state_sequence, action_sequence, reward_sequence

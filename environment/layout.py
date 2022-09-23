@@ -159,6 +159,6 @@ def tryToLoad(fullname):
         return None
     f = open(fullname)
     try:
-        return Layout([line.strip() for line in f])
+        return Layout([line.strip('\n') for line in f])
     finally:
         f.close()

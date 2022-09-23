@@ -1,8 +1,7 @@
 import pickle
 
-with open("F:\\constant_map\\results\\constants\\adjacent_map_fmri.pickle", 'rb') as file:
-    data1 = pickle.load(file)
-with open("F:\\constant_map\\results\\constants\\adjacent_map.pickle", 'rb') as file:
-    data2 = pickle.load(file)
-
-x = 0
+filename = "./environment/layouts/originalClassic.lay"
+f = open(filename)
+for line in f:
+    x = 0
+map = [line.strip() for line in f]

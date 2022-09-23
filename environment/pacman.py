@@ -41,7 +41,7 @@ The keys are 'a', 's', 'd', and 'w' to move (or arrow keys).  Have fun!
 """
 import pickle
 
-from game import GameStateData
+from game import GameStateData, Configuration
 from game import Game
 from game import Directions
 from game import Actions
@@ -476,8 +476,14 @@ class GhostRules:
         else:
             if not state.data._win:
                 state.data.scoreChange -= 500
-                state.data._lose = True
-
+                # state.data._lose = True
+                state.data._lose = False
+                state.data.agentStates[0].configuration = Configuration(state.data.agentStates[0].start.pos,
+                                                                        state.data.agentStates[
+                                                                            0].configuration.direction,
+                                                                        state.data.agentStates[
+                                                                            0].configuration.h, state.data.agentStates[
+                                                                            0].configuration.w)
     collide = staticmethod(collide)
 
     def canKill(pacmanPosition, ghostPosition):

@@ -28,7 +28,7 @@ def get_args():
 
 def get_paramater_of_strategy(strategy_name, h, w):
     args = get_args()
-    L = max(h,w)
+    L = max(h, w)
     if strategy_name == "local":
         args.depth = int(L / 3)
         args.ghost_attractive_thr = int(L / 3)
@@ -39,7 +39,7 @@ def get_paramater_of_strategy(strategy_name, h, w):
         args.ghost_attractive_thr = L
         args.ghost_repulsive_thr = L
     elif strategy_name == "evade":
-        args.depth = int(L / 3)
+        args.depth = 3
         args.ghost_attractive_thr = L
         args.ghost_repulsive_thr = L
         args.reward_coeff = 0.0
@@ -49,9 +49,9 @@ def get_paramater_of_strategy(strategy_name, h, w):
         args.ghost_attractive_thr = 0
         args.ghost_repulsive_thr = 0
     elif strategy_name == "approach":
-        args.depth = int(L / 3)
-        args.ghost_attractive_thr = int(L / 3)
-        args.ghost_repulsive_thr = int(L / 3)
+        args.depth = int(L / 2)
+        args.ghost_attractive_thr = int(L / 2)
+        args.ghost_repulsive_thr = int(L / 2)
     return args
 
 
@@ -82,7 +82,7 @@ class singleStartegyAgent(Agent):
         local_strategy = Strategy("local", adjacent_data, locs_df, reward_amount,
                                   get_paramater_of_strategy("local", h, w))
         global_strategy = simpleGlobalStrategy(adjacent_data, locs_df, reward_amount,
-                                               get_paramater_of_strategy("local", h, w))
+                                               get_paramater_of_strategy("global", h, w))
         evade_strategy = Strategy("evade", adjacent_data, locs_df, reward_amount,
                                   get_paramater_of_strategy("evade", h, w))
         energizer_strategy = Strategy("energizer", adjacent_data, locs_df, reward_amount,
@@ -130,43 +130,17 @@ class singleStartegyAgent(Agent):
         if 'Stop' in legal:
             legal.remove('Stop')
 
-
-
         game_status = self.state_to_feature(state)
         # choose strategy
         strategy = self.startegies[2]
         strategy.set_state(game_status)
         _, Q = strategy.nextDir(return_Q=True)
         choice = strategy.mapStatus["dir_list"][makeChoice(Q)]
-        if (choice == 'down' and game_status["PacmanPos"][1] == 10) or (
-                choice == 'up' and game_status["PacmanPos"][1] == 9):
-            x = 0
-
-        # strategy.set_state(game_status)
-        # _, Q = strategy.nextDir(return_Q=True)
 
         dir_dict = {"left": Directions.WEST, "right": Directions.EAST, "up": Directions.NORTH, "down": Directions.SOUTH
                     }
         move = dir_dict[choice]
         print(Q)
-        # print(game_status["PacmanPos"], move)
-        # if random.random() < 0.8:
-        #     move = dir_dict[choice]
-        # else:
-        #     move = np.random.choice(legal, 1)[0]
-
-        # move = np.random.choice(legal, 1)[0]
-        # print(move)
-        # if move == "West":
-        #     move = Directions.WEST
-        # elif move == 'Stop':
-        #     move = Directions.STOP
-        # elif move == 'East':
-        #     move = Directions.EAST
-        # elif move == "Up":
-        #     move = Directions.NORTH
-        # elif move == "Down":
-        #     move = Directions.SOUTH
         return move
 
     def getMove(self, legal):
