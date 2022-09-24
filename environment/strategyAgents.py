@@ -10,6 +10,8 @@ from Utils.FileUtils import readAdjacentMap, readLocDistance, readRewardAmount, 
 from strategyPolicyTable import strategyPolicyTable
 from copy import deepcopy
 from Utils.ComputationUtils import scaleOfNumber, makeChoice
+import pandas as pd
+from FeatureExtractor.ExtractGameFeatures import featureExtractor
 
 
 def get_args():
@@ -64,11 +66,13 @@ class singleStartegyAgent(Agent):
     def __init__(self, map_name="smallGrid", index=0, **arg):
 
         self.lastMove = Directions.STOP
+        self.map_name = map_name
         # self.index = index
         self.keys = []
         self.index = index
         self.get_strategies(map_name)
         self.strategy_choice = strategyPolicyTable()
+        self.featureExtractor = featureExtractor(map_name)
 
     def get_strategies(self, map_name):
         import layout
@@ -89,7 +93,11 @@ class singleStartegyAgent(Agent):
                                       get_paramater_of_strategy("energizer", h, w))
         approach_strategy = Strategy("approach", adjacent_data, locs_df, reward_amount,
                                      get_paramater_of_strategy("approach", h, w))
-        self.startegies = [local_strategy, global_strategy, evade_strategy, energizer_strategy, approach_strategy]
+        self.startegies = {
+            "local": local_strategy, "global": global_strategy, "evade": evade_strategy,
+            "energizer": energizer_strategy, "approach": approach_strategy
+        }
+        # self.startegies = [local_strategy, global_strategy, evade_strategy, energizer_strategy, approach_strategy]
 
     def state_to_feature(self, state):
         game_status = {"PacmanPos": [], "ghost_data": [], "ghost_status": [],
@@ -122,7 +130,21 @@ class singleStartegyAgent(Agent):
         if len(state.data.capsules) != 0:
             game_status["energizer_data"] = deepcopy([change_pos(i, numRow) for i in state.data.capsules])
 
-        return game_status
+        Series_data = {
+            "pacmanPos": [game_status["PacmanPos"]],
+            "ghost1Pos": [game_status["ghost_data"][0]],
+            "ghost2Pos": [game_status["ghost_data"][1]],
+            "energizers": [game_status["energizer_data"]],
+            "beans": [game_status["bean_data"]],
+            "ifscared1": [game_status["ghost_status"][0]],
+            "ifscared2": [game_status["ghost_status"][1]],
+            "pacman_dir": [game_status["last_dir"]]
+        }
+        data = pd.DataFrame(Series_data)
+        t = time.time()
+        feature = self.featureExtractor.extract_feature(data)
+        print(-t + time.time())
+        return game_status, feature
 
     def getAction(self, state):
 
@@ -130,9 +152,12 @@ class singleStartegyAgent(Agent):
         if 'Stop' in legal:
             legal.remove('Stop')
 
-        game_status = self.state_to_feature(state)
+        game_status, feature = self.state_to_feature(state)
+
         # choose strategy
-        strategy = self.startegies[2]
+        strategy_name = self.strategy_choice.get_strategy(feature)
+        print(strategy_name)
+        strategy = self.startegies[strategy_name]
         strategy.set_state(game_status)
         _, Q = strategy.nextDir(return_Q=True)
         choice = strategy.mapStatus["dir_list"][makeChoice(Q)]
