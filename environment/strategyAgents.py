@@ -36,8 +36,8 @@ def get_paramater_of_strategy(strategy_name, h, w):
         args.ghost_attractive_thr = int(L / 3)
         args.ghost_repulsive_thr = int(L / 3)
     elif strategy_name == "global":
-        args.depth = L
-        args.ignore_depth = int(L / 3)
+        args.depth = h+w
+        args.ignore_depth = int(L / 2)
         args.ghost_attractive_thr = L
         args.ghost_repulsive_thr = L
     elif strategy_name == "evade":
@@ -51,9 +51,9 @@ def get_paramater_of_strategy(strategy_name, h, w):
         args.ghost_attractive_thr = 0
         args.ghost_repulsive_thr = 0
     elif strategy_name == "approach":
-        args.depth = int(L / 2)
-        args.ghost_attractive_thr = int(L / 2)
-        args.ghost_repulsive_thr = int(L / 2)
+        args.depth = int(L / 4)
+        args.ghost_attractive_thr = L
+        args.ghost_repulsive_thr = L
     return args
 
 
@@ -85,8 +85,8 @@ class singleStartegyAgent(Agent):
 
         local_strategy = Strategy("local", adjacent_data, locs_df, reward_amount,
                                   get_paramater_of_strategy("local", h, w))
-        global_strategy = simpleGlobalStrategy(adjacent_data, locs_df, reward_amount,
-                                               get_paramater_of_strategy("global", h, w))
+        global_strategy = Strategy("global", adjacent_data, locs_df, reward_amount,
+                                   get_paramater_of_strategy("global", h, w))
         evade_strategy = Strategy("evade", adjacent_data, locs_df, reward_amount,
                                   get_paramater_of_strategy("evade", h, w))
         energizer_strategy = Strategy("energizer", adjacent_data, locs_df, reward_amount,
@@ -97,15 +97,20 @@ class singleStartegyAgent(Agent):
             "local": local_strategy, "global": global_strategy, "evade": evade_strategy,
             "energizer": energizer_strategy, "approach": approach_strategy
         }
-        # self.startegies = [local_strategy, global_strategy, evade_strategy, energizer_strategy, approach_strategy]
 
     def state_to_feature(self, state):
+        """
+        将游戏state转变为 game_status和feature
+        :param state: 
+        :return: 
+        """
         game_status = {"PacmanPos": [], "ghost_data": [], "ghost_status": [],
                        "bean_data": [], "energizer_data": [], "Reward": [], "last_dir": self.lastMove}
 
         dir_dict = {"Stop": None, "North": "up", "South": "down", "West": "left", "East": "right"}
         game_status["last_dir"] = dir_dict[game_status["last_dir"]]
 
+        # get game_status
         numRow = len(state.data.layout.layoutText)
         game_status["PacmanPos"] = change_pos(state.data.agentStates[0].configuration.pos, numRow)
         for i in range(1, len(state.data.agentStates)):
@@ -130,6 +135,7 @@ class singleStartegyAgent(Agent):
         if len(state.data.capsules) != 0:
             game_status["energizer_data"] = deepcopy([change_pos(i, numRow) for i in state.data.capsules])
 
+        # get feature
         Series_data = {
             "pacmanPos": [game_status["PacmanPos"]],
             "ghost1Pos": [game_status["ghost_data"][0]],
@@ -140,10 +146,10 @@ class singleStartegyAgent(Agent):
             "ifscared2": [game_status["ghost_status"][1]],
             "pacman_dir": [game_status["last_dir"]]
         }
+        if len(Series_data["energizers"][0]) == 0:
+            Series_data["energizers"][0] = np.nan
         data = pd.DataFrame(Series_data)
-        t = time.time()
         feature = self.featureExtractor.extract_feature(data)
-        print(-t + time.time())
         return game_status, feature
 
     def getAction(self, state):
@@ -158,6 +164,7 @@ class singleStartegyAgent(Agent):
         strategy_name = self.strategy_choice.get_strategy(feature)
         print(strategy_name)
         strategy = self.startegies[strategy_name]
+        # strategy = self.startegies["approach"]
         strategy.set_state(game_status)
         _, Q = strategy.nextDir(return_Q=True)
         choice = strategy.mapStatus["dir_list"][makeChoice(Q)]
@@ -166,18 +173,6 @@ class singleStartegyAgent(Agent):
                     }
         move = dir_dict[choice]
         print(Q)
-        return move
-
-    def getMove(self, legal):
-        move = Directions.STOP
-        if (self.WEST_KEY in self.keys or 'Left' in self.keys) and Directions.WEST in legal:
-            move = Directions.WEST
-        if (self.EAST_KEY in self.keys or 'Right' in self.keys) and Directions.EAST in legal:
-            move = Directions.EAST
-        if (self.NORTH_KEY in self.keys or 'Up' in self.keys) and Directions.NORTH in legal:
-            move = Directions.NORTH
-        if (self.SOUTH_KEY in self.keys or 'Down' in self.keys) and Directions.SOUTH in legal:
-            move = Directions.SOUTH
         return move
 
 # if __name__ == '__main__':

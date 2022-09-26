@@ -44,6 +44,7 @@ class Strategy:
         self.Q_value = [0, 0, 0, 0]
         self.is_eaten = False
         self.root = anytree.Node(gameStatus["PacmanPos"],
+                                 cur_len=0,
                                  cur_utility=0.0,
                                  cumulative_utility=0.0,
                                  cur_reward=0.0,
@@ -167,6 +168,7 @@ class Strategy:
 
             new_node = anytree.Node(
                 cur_pos,
+                cur_len=self.current_node.cur_len + 1,
                 parent=self.current_node,
                 dir_from_parent=each,
                 cur_utility={
@@ -190,6 +192,8 @@ class Strategy:
             )
             # If the Pacman is eaten, end this path
             if self.is_eaten:
+                # if self.strategy_type=="approach":
+                #     self.node_queue.append(new_node)
                 self.is_eaten = False
             else:
                 self.node_queue.append(new_node)
@@ -213,6 +217,8 @@ class Strategy:
             else:
                 ignore = False
             while None != self.current_node:
+                if self.current_node.name == (12, 14):
+                    x = 0
                 self._attachNode(cur_depth=cur_depth, ignore=ignore)
                 self.current_node = self.node_queue.popleft()
             self.node_queue.append(None)

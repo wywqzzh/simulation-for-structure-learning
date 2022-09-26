@@ -137,6 +137,7 @@ class AgentState:
         self.start = startConfiguration
         self.configuration = startConfiguration
         self.isPacman = isPacman
+        # TODO
         self.scaredTimer = 0
         # state below potentially used for contest only
         self.numCarrying = 0

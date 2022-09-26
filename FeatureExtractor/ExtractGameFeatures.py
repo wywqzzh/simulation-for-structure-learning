@@ -41,17 +41,18 @@ class featureExtractor:
             res.append(np.min(np.array([PG1[i], PG2[i]])[ind]) if len(ind) > 0 else inf_val)
         return pd.Series(res)
 
-    def _adjacentBeans(self, pacmanPos, beans, type, locs_df):
+    def _adjacentBeans(self, pacmanPos, beans, type):
         '''
         Pacman某个相邻位置和豆子的距离
         '''
+        # print("_adjacentBeans pacmanPos:", pacmanPos)
         if isinstance(pacmanPos, float):
             return 0
         # Find adjacent positions
         if type == "left":
-            adjacent = ((pacmanPos[0] - 1) % self.layout_w, pacmanPos[1])
+            adjacent = ((pacmanPos[0] - 1 - 1) % self.layout_w + 1, pacmanPos[1])
         elif type == "right":
-            adjacent = ((pacmanPos[0] + 1) % self.layout_h, pacmanPos[1])
+            adjacent = ((pacmanPos[0] - 1 + 1) % self.layout_w + 1, pacmanPos[1])
         elif type == "up":
             adjacent = (pacmanPos[0], pacmanPos[1] - 1)
         elif type == "down":
@@ -59,12 +60,12 @@ class featureExtractor:
         else:
             raise ValueError("Undefined direction {}!".format(type))
         # Adjacent beans num
-        if adjacent not in locs_df:
+        if adjacent not in self.locs_df:
             bean_num = 0
         else:
             bean_num = (
                 0 if isinstance(beans, float) else len(np.where(
-                    np.array([0 if adjacent == each else locs_df[adjacent][each] for each in beans]) <= 10)[0]
+                    np.array([0 if adjacent == each else self.locs_df[adjacent][each] for each in beans]) <= 10)[0]
                                                        )
             )
         return bean_num
@@ -73,21 +74,23 @@ class featureExtractor:
         '''
         Pacman某个相邻位置和鬼的距离
         '''
+        # print("_adjacentDist pacmanPos:", pacmanPos)
         if isinstance(ghostPos, list):
             ghostPos = ghostPos[0]
         if isinstance(pacmanPos, float) or isinstance(adjacent_data[pacmanPos][type], float):
             return inf_val
         # Find adjacent positions
         if type == "left":
-            adjacent = ((pacmanPos[0] - 1) % self.layout_w, pacmanPos[1])
+            adjacent = ((pacmanPos[0] - 1 - 1) % self.layout_w + 1, pacmanPos[1])
         elif type == "right":
-            adjacent = ((pacmanPos[0] + 1) % self.layout_h, pacmanPos[1])
+            adjacent = ((pacmanPos[0] - 1 + 1) % self.layout_w + 1, pacmanPos[1])
         elif type == "up":
             adjacent = (pacmanPos[0], pacmanPos[1] - 1)
         elif type == "down":
             adjacent = (pacmanPos[0], pacmanPos[1] + 1)
         else:
             raise ValueError("Undefined direction {}!".format(type))
+        ghostPos = (int(ghostPos[0]), int(ghostPos[1]))
         return 0 if adjacent == ghostPos else locs_df[adjacent][ghostPos]
 
     def extractBehaviorFeature(self, trial):
@@ -167,6 +170,16 @@ class featureExtractor:
             ),
             axis=1
         )
+        beans_10step = trial[["pacmanPos", "beans"]].apply(
+            lambda x: 0 if isinstance(x.beans, float)
+            else len(
+                np.where(
+                    np.array([0 if x.pacmanPos == each
+                              else self.locs_df[x.pacmanPos][each] for each in x.beans]) <= 10
+                )[0]
+            ),
+            axis=1
+        )
         # Pacman附近5~10步内豆子数
         beans_5to10step = trial[["pacmanPos", "beans"]].apply(
             lambda x: 0 if isinstance(x.beans, float)
@@ -199,19 +212,19 @@ class featureExtractor:
 
         # Pacman四个相邻位置10步内豆子数
         beans_left = trial[["pacmanPos", "beans"]].apply(
-            lambda x: self._adjacentBeans(x.pacmanPos, x.beans, "left", self.locs_df),
+            lambda x: self._adjacentBeans(x.pacmanPos, x.beans, "left"),
             axis=1
         )
         beans_right = trial[["pacmanPos", "beans"]].apply(
-            lambda x: self._adjacentBeans(x.pacmanPos, x.beans, "right", self.locs_df),
+            lambda x: self._adjacentBeans(x.pacmanPos, x.beans, "right"),
             axis=1
         )
         beans_up = trial[["pacmanPos", "beans"]].apply(
-            lambda x: self._adjacentBeans(x.pacmanPos, x.beans, "up", self.locs_df),
+            lambda x: self._adjacentBeans(x.pacmanPos, x.beans, "up"),
             axis=1
         )
         beans_down = trial[["pacmanPos", "beans"]].apply(
-            lambda x: self._adjacentBeans(x.pacmanPos, x.beans, "down", self.locs_df),
+            lambda x: self._adjacentBeans(x.pacmanPos, x.beans, "down"),
             axis=1
         )
         # 鬼的状态
@@ -256,6 +269,7 @@ class featureExtractor:
                 "beans_down": beans_down,
 
                 "beans_within_5": beans_5step,
+                "beans_within_10": beans_10step,
                 "beans_between_5and10": beans_5to10step,
                 "beans_beyond_10": beans_over_10step,
                 "beans_num": beans_num,
@@ -283,26 +297,34 @@ class featureExtractor:
         # ghost features
         df["PG1"] = df[["PG1_{}".format(d) for d in dir_list]].apply(lambda x: x.min(), axis=1)
         df["PG2"] = df[["PG2_{}".format(d) for d in dir_list]].apply(lambda x: x.min(), axis=1)
-        df.loc[df.ifscared1 == 1, "PG1"] = np.nan
-        df.loc[df.ifscared2 == 1, "PG2"] = np.nan
+        if np.array(df["ifscared1"] == 1)[0]:
+            x = 0
+        if np.array(df["ifscared2"] == 1)[0]:
+            x = 0
+        df.loc[df.ifscared1 == 1, "PG1"] = inf_val
+        df.loc[df.ifscared2 == 1, "PG2"] = inf_val
         df["if_normal1"] = (df.ifscared1 <= 0).astype(int)
         df["if_dead1"] = (df.ifscared1 == 1).astype(int)
         df["if_scared1"] = (df.ifscared1 >= 2).astype(int)
         df["if_normal2"] = (df.ifscared2 <= 0).astype(int)
         df["if_dead2"] = (df.ifscared2 == 1).astype(int)
         df["if_scared2"] = (df.ifscared2 >= 2).astype(int)
+        df["zero_beans_within_10"] = (df.beans_within_10 == 0).astype(int)
+        df["zero_beans_beyond_10"] = (df.beans_beyond_10 == 0).astype(int)
         predictors = df[[
             "PG1", "PG2", "PE",
-            "beans_dir", "beans_num", "beans_within_5", "beans_between_5and10", "beans_beyond_10",
-            "if_scared1", "if_scared2", "if_normal1", "if_normal2", "if_dead1", "if_dead2"]]
+            "beans_dir", "beans_num", "beans_within_10", "beans_between_5and10", "beans_beyond_10",
+            "if_scared1", "if_scared2", "if_normal1", "if_normal2", "if_dead1", "if_dead2", "zero_beans_within_10",
+            "zero_beans_beyond_10"]]
         # normalization
         continuous_cols = [
             "PG1", "PG2", "PE",
-            "beans_dir", "beans_num", "beans_within_5", "beans_between_5and10", "beans_beyond_10"
+            "beans_dir", "beans_num", "beans_within_10", "beans_between_5and10", "beans_beyond_10"
         ]
-        continuous_col_max = np.array([self.map_num_const["max_dist"]] * 3 + [int(self.map_num_const["max_beans"] / 4),
-                                                                              self.map_num_const["max_beans"], 20, 20,
-                                                                              self.map_num_const["max_beans"]])
+        max_beans = self.map_num_const["max_beans"]
+        max_dist = self.map_num_const["max_dist"]
+        continuous_col_max = np.array(
+            [max_dist] * 3 + [int(max_beans / 4), max_beans, min(40, max_beans), min(75, max_beans), max_beans])
         category_cols = ["if_scared1", "if_scared2", "if_normal1", "if_normal2", "if_dead1", "if_dead2"]
         # predictors[continuous_cols] = predictors[continuous_cols] / predictors[continuous_cols].max()
         predictors[continuous_cols] = predictors[continuous_cols] / continuous_col_max
@@ -322,23 +344,38 @@ class featureExtractor:
         }
 
     def discretize(self, data):
-        numerical_cols = ["PG1", "PG2", "PE", "beans_within_5", "beans_beyond_10"]
-
-        bin = [0, 0.33, 0.67, 1.01]
-        numerical_encode = pd.concat(
-            [pd.cut(data[i], bin, right=False, labels=[0, 1, 2]) for i in numerical_cols
+        numerical_cols1 = ["PG1", "PG2", "PE", "beans_within_10", "beans_beyond_10"]
+        bin = [0, 0.1, 0.4, 10]
+        numerical_encode1 = pd.concat(
+            [pd.cut(data[i], bin, right=False, labels=[0, 1, 2]) for i in numerical_cols1
              ],
             axis=1,
         )
+        numerical_encode1.columns = numerical_cols1
+        # numerical_cols2 = []
+        # print(data["beans_within_10"])
+        # bin = [0, 0.33, 0.67, 10]
+        # numerical_encode2 = pd.concat(
+        #     [pd.cut(data[i], bin, right=False, labels=[0, 1, 2]) for i in numerical_cols2
+        #      ],
+        #     axis=1,
+        # )
+        # numerical_encode2.columns = numerical_cols2
+        numerical_encode = pd.DataFrame()
+        numerical_encode[numerical_cols1] = numerical_encode1[numerical_cols1]
+        # numerical_encode[numerical_cols2] = numerical_encode2[numerical_cols2]
         is_encode = pd.DataFrame()
         for ghost in [1, 2]:
             cols = ["if_" + i + str(ghost) for i in ["normal", "dead", "scared"]]
-            is_encode["GS" + str(ghost)] = np.argmax(data[cols].values, 1) + 1
+            is_encode["GS" + str(ghost)] = np.argmax(data[cols].values, 1)
 
         numerical_encode[["GS1", "GS2"]] = is_encode[["GS1", "GS2"]]
+        numerical_encode[["zero_beans_within_10", "zero_beans_beyond_10"]] = data[
+            ["zero_beans_within_10", "zero_beans_beyond_10"]]
         numerical_cols = ["PG1", "PG2", "PE", "BN5", "BN10"]
-        numerical_encode.columns = numerical_cols + ["GS1", "GS2"]
-        numerical_encode = numerical_encode[["PG1", "GS1", "PG2", "GS2", "PE", "BN5", "BN10"]]
+        numerical_encode.columns = numerical_cols + ["GS1", "GS2", "ZBN5", "ZBN10"]
+        numerical_encode = numerical_encode[["PG1", "GS1", "PG2", "GS2", "PE", "BN5", "BN10", "ZBN5", "ZBN10"]]
+        print(numerical_encode)
         feature = numerical_encode.iloc[0].to_dict()
         return feature
 
@@ -346,6 +383,7 @@ class featureExtractor:
         self.extractBehaviorFeature(data)
         predictors = self.predictor4Prediction()
         feature = self.discretize(predictors)
+        print(feature)
         return feature
 # if __name__ == '__main__':
 #     data = pd.read_pickle("../Data/10_trial_data_Omega.pkl")

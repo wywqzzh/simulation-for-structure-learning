@@ -51,6 +51,8 @@ import layout
 import sys
 import random
 import os
+import warnings
+warnings.filterwarnings('ignore')
 
 
 ###################################################
