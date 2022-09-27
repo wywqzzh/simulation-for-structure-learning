@@ -1,6 +1,9 @@
+import pickle
+
 import numpy as np
 import pandas as pd
 import networkx as nx
+import math
 
 
 # TODO:预测鬼的行为轨迹
@@ -15,9 +18,11 @@ def runMapConst(filename):
     ct = 0
     for i in range(mapCol):
         for j in range(mapRow):
+            if i == 1 and j == 13:
+                x = 0
             map_info[ct, 0] = i + 1
             map_info[ct, 1] = j + 1
-            print(j, i)
+            # print(j, i)
             if map[j][i] == '%':
                 map_info[ct, 2] = 1
             else:
@@ -101,8 +106,11 @@ def create_dij_distance_map(map_name):
     # In[5]:
 
     Tr = {"pos1": [], "pos2": [], "dis": [], "path": [], "relative_dir": []}
+    print(len(T.pos) ** 2)
     for Source in T.pos:
+        print(Source)
         for Target in T.pos:
+
             if Source == Target:
                 continue
             Tr['pos1'].append(Source)
@@ -120,8 +128,41 @@ def create_dij_distance_map(map_name):
     df.to_pickle("../Data/mapMsg/dij_distance_map_" + map_name + ".pkl")
 
 
+def get_intersection(map_name):
+    adjacent = pd.read_pickle("../Data/mapMsg/adjacent_map_" + map_name + ".pkl")
+    position = []
+    for i in range(len(adjacent)):
+        pos = adjacent["pos"][i]
+        if pos == (2, 14):
+            x = 0
+        left = adjacent["left"][i]
+        right = adjacent["right"][i]
+        up = adjacent["up"][i]
+        down = adjacent["down"][i]
+        t = np.ones(4)
+        if isinstance(left, float):
+            t[0] = 0
+        if isinstance(right, float):
+            t[1] = 0
+        if isinstance(up, float):
+            t[2] = 0
+        if isinstance(down, float):
+            t[3] = 0
+        if np.sum(t) >= 3 or np.sum(t) == 1:
+            position.append(pos)
+        if np.sum(t) == 2 and (np.sum(t[:2]) > 0 and np.sum(t[2:]) > 0):
+            position.append(pos)
+    position = {"pos": position}
+    with open("../Data/mapMsg/intersection_map_" + map_name + ".pkl","wb") as file:
+        pickle.dump(position,file)
+    # df = pd.DataFrame(position)
+    # df.to_csv("../Data/mapMsg/intersection_map_" + map_name + ".csv")
+    # df.to_pickle("../Data/mapMsg/intersection_map_" + map_name + ".pkl")
+
+
 if __name__ == '__main__':
     filename = "../environment/layouts/originalClassic.lay"
-    runMapConst(filename)
-    create_adjacent_map(filename.split("/")[-1][:-4])
-    create_dij_distance_map(filename.split("/")[-1][:-4])
+    # runMapConst(filename)
+    # create_adjacent_map(filename.split("/")[-1][:-4])
+    # create_dij_distance_map(filename.split("/")[-1][:-4])
+    get_intersection(filename.split("/")[-1][:-4])

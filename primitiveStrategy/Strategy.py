@@ -44,7 +44,7 @@ class Strategy:
         self.Q_value = [0, 0, 0, 0]
         self.is_eaten = False
         self.root = anytree.Node(gameStatus["PacmanPos"],
-                                 cur_len=0,
+                                 cur_len=1,
                                  cur_utility=0.0,
                                  cumulative_utility=0.0,
                                  cur_reward=0.0,
@@ -98,6 +98,7 @@ class Strategy:
                     or np.all(np.array(ghost_status) == 1):
                 exact_reward += 0.0
             for index, ghost in enumerate(self.gameStatus["ghost_data"]):
+                ghost = (int(ghost[0]), int(ghost[1]))
                 if ghost_status[index] != 1:
                     if cur_position == ghost:
                         exact_reward += self.mapStatus["reward_amount"][8]
@@ -229,7 +230,15 @@ class Strategy:
 
         # Add potential reward/risk for every path
         for each in self.root.leaves:
-            each.path_utility = each.cumulative_utility
+            if self.strategy_type == "global" or self.strategy_type == "approach":
+                each.path_utility = each.cumulative_utility / each.cur_len
+            elif self.strategy_type == "evade":
+                if each.cumulative_utility >= 0:
+                    each.path_utility = each.cumulative_utility + each.cur_len
+                else:
+                    each.path_utility = each.cumulative_utility
+            else:
+                each.path_utility = each.cumulative_utility
         # Find the best path with the highest utility
         best_leaf = self.root.leaves[0]
         for leaf in self.root.leaves:
@@ -283,8 +292,8 @@ def argparser():
     parser.add_argument('--ghost_repulsive_thr', type=int, default=10, help='Ghost repulsive threshold.')
     parser.add_argument('--reward_coeff', type=float, default=1.0, help='Coefficient for the reward.')
     parser.add_argument('--risk_coeff', type=float, default=0.0, help='Coefficient for the risk.')
-    parser.add_argument('--randomness_coeff', type=float, default=1.0, help='Coefficient for the randomness.')
-    parser.add_argument('--laziness_coeff', type=float, default=1.0, help='Coefficient for the laziness.')
+    parser.add_argument('--randomness_coeff', type=float, default=0.0, help='Coefficient for the randomness.')
+    parser.add_argument('--laziness_coeff', type=float, default=0.0, help='Coefficient for the laziness.')
     config = parser.parse_args()
     return config
 

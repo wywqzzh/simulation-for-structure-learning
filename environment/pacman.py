@@ -52,6 +52,7 @@ import sys
 import random
 import os
 import warnings
+
 warnings.filterwarnings('ignore')
 
 
@@ -486,6 +487,7 @@ class GhostRules:
                                                                         state.data.agentStates[
                                                                             0].configuration.h, state.data.agentStates[
                                                                             0].configuration.w)
+
     collide = staticmethod(collide)
 
     def canKill(pacmanPosition, ghostPosition):

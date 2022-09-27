@@ -13,6 +13,8 @@ from Utils.ComputationUtils import scaleOfNumber, makeChoice
 import pandas as pd
 from FeatureExtractor.ExtractGameFeatures import featureExtractor
 
+import pandas as pd
+
 
 def get_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -22,8 +24,8 @@ def get_args():
     parser.add_argument('--ghost_repulsive_thr', type=int, default=34, help='Ghost repulsive threshold.')
     parser.add_argument('--reward_coeff', type=float, default=1.0, help='Coefficient for the reward.')
     parser.add_argument('--risk_coeff', type=float, default=0.0, help='Coefficient for the risk.')
-    parser.add_argument('--randomness_coeff', type=float, default=1.0, help='Coefficient for the randomness.')
-    parser.add_argument('--laziness_coeff', type=float, default=1.0, help='Coefficient for the laziness.')
+    parser.add_argument('--randomness_coeff', type=float, default=0.0, help='Coefficient for the randomness.')
+    parser.add_argument('--laziness_coeff', type=float, default=0.0, help='Coefficient for the laziness.')
     config = parser.parse_args(args=[])
     return config
 
@@ -33,27 +35,17 @@ def get_paramater_of_strategy(strategy_name, h, w):
     L = max(h, w)
     if strategy_name == "local":
         args.depth = int(L / 3)
-        args.ghost_attractive_thr = int(L / 3)
-        args.ghost_repulsive_thr = int(L / 3)
     elif strategy_name == "global":
-        args.depth = h+w
-        args.ignore_depth = int(L / 2)
-        args.ghost_attractive_thr = L
-        args.ghost_repulsive_thr = L
+        args.depth = L
+        args.ignore_depth = 0
     elif strategy_name == "evade":
         args.depth = 3
-        args.ghost_attractive_thr = L
-        args.ghost_repulsive_thr = L
         args.reward_coeff = 0.0
         args.risk_coeff = 1.0
     elif strategy_name == "energizer":
         args.depth = int(L / 3)
-        args.ghost_attractive_thr = 0
-        args.ghost_repulsive_thr = 0
     elif strategy_name == "approach":
-        args.depth = int(L / 4)
-        args.ghost_attractive_thr = L
-        args.ghost_repulsive_thr = L
+        args.depth = int(L / 2)
     return args
 
 
@@ -62,16 +54,12 @@ def change_pos(pos, numRow):
     return temp_pos
 
 
-class singleStartegyAgent(Agent):
+class StartegyAgent(Agent):
     def __init__(self, map_name="smallGrid", index=0, **arg):
-
         self.lastMove = Directions.STOP
         self.map_name = map_name
-        # self.index = index
-        self.keys = []
         self.index = index
         self.get_strategies(map_name)
-        self.strategy_choice = strategyPolicyTable()
         self.featureExtractor = featureExtractor(map_name)
 
     def get_strategies(self, map_name):
@@ -79,8 +67,10 @@ class singleStartegyAgent(Agent):
         layout = layout.getLayout(map_name).layoutText
         h = len(layout)
         w = len(layout[0])
+        self.layout_h = h
         locs_df = readLocDistance("../Data/mapMsg/dij_distance_map_" + map_name + ".csv")
         adjacent_data = readAdjacentMap("../Data/mapMsg/adjacent_map_" + map_name + ".csv")
+        self.intersection_data = pd.read_pickle("../Data/mapMsg/intersection_map_" + map_name + ".pkl")["pos"]
         reward_amount = readRewardAmount()
 
         local_strategy = Strategy("local", adjacent_data, locs_df, reward_amount,
@@ -151,7 +141,15 @@ class singleStartegyAgent(Agent):
         data = pd.DataFrame(Series_data)
         feature = self.featureExtractor.extract_feature(data)
         return game_status, feature
+    
 
+
+class singleStartegyAgent(StartegyAgent):
+    def __init__(self, map_name="smallGrid", index=0, **arg):
+        super(singleStartegyAgent, self).__init__(map_name)
+        self.strategy_choice = strategyPolicyTable()
+        self.featureExtractor = featureExtractor(map_name)
+        self.last_strategy_name = "local"
     def getAction(self, state):
 
         legal = state.getLegalActions(self.index)
@@ -162,6 +160,13 @@ class singleStartegyAgent(Agent):
 
         # choose strategy
         strategy_name = self.strategy_choice.get_strategy(feature)
+        # strategy_name = "approach"
+        cur_pos = change_pos(state.data.agentStates[0].configuration.pos, self.layout_h)
+        if cur_pos in self.intersection_data or strategy_name == "evade" or self.last_strategy_name == "evade":
+            print("change strategy,", cur_pos)
+            self.last_strategy_name = strategy_name
+        else:
+            strategy_name = self.last_strategy_name
         print(strategy_name)
         strategy = self.startegies[strategy_name]
         # strategy = self.startegies["approach"]
@@ -172,8 +177,10 @@ class singleStartegyAgent(Agent):
         dir_dict = {"left": Directions.WEST, "right": Directions.EAST, "up": Directions.NORTH, "down": Directions.SOUTH
                     }
         move = dir_dict[choice]
-        print(Q)
+        if strategy_name == "approach":
+            print(Q)
         return move
 
-# if __name__ == '__main__':
-#     x = singleStartegyAgent()
+# class singleStartegyAgent(StartegyAgent):
+#     def __init__(self):
+#         pass

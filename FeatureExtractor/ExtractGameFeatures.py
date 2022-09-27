@@ -91,6 +91,7 @@ class featureExtractor:
         else:
             raise ValueError("Undefined direction {}!".format(type))
         ghostPos = (int(ghostPos[0]), int(ghostPos[1]))
+        # print(ghostPos, pacmanPos)
         return 0 if adjacent == ghostPos else locs_df[adjacent][ghostPos]
 
     def extractBehaviorFeature(self, trial):
@@ -324,7 +325,7 @@ class featureExtractor:
         max_beans = self.map_num_const["max_beans"]
         max_dist = self.map_num_const["max_dist"]
         continuous_col_max = np.array(
-            [max_dist] * 3 + [int(max_beans / 4), max_beans, min(40, max_beans), min(75, max_beans), max_beans])
+            [max_dist] * 3 + [int(max_beans / 4), max_beans, min(25, max_beans), min(75, max_beans), max_beans])
         category_cols = ["if_scared1", "if_scared2", "if_normal1", "if_normal2", "if_dead1", "if_dead2"]
         # predictors[continuous_cols] = predictors[continuous_cols] / predictors[continuous_cols].max()
         predictors[continuous_cols] = predictors[continuous_cols] / continuous_col_max
@@ -370,12 +371,12 @@ class featureExtractor:
             is_encode["GS" + str(ghost)] = np.argmax(data[cols].values, 1)
 
         numerical_encode[["GS1", "GS2"]] = is_encode[["GS1", "GS2"]]
-        numerical_encode[["zero_beans_within_10", "zero_beans_beyond_10"]] = data[
+        numerical_encode[["zero_beans_within_5", "zero_beans_beyond_10"]] = data[
             ["zero_beans_within_10", "zero_beans_beyond_10"]]
         numerical_cols = ["PG1", "PG2", "PE", "BN5", "BN10"]
         numerical_encode.columns = numerical_cols + ["GS1", "GS2", "ZBN5", "ZBN10"]
         numerical_encode = numerical_encode[["PG1", "GS1", "PG2", "GS2", "PE", "BN5", "BN10", "ZBN5", "ZBN10"]]
-        print(numerical_encode)
+        # print(numerical_encode)
         feature = numerical_encode.iloc[0].to_dict()
         return feature
 
@@ -383,7 +384,7 @@ class featureExtractor:
         self.extractBehaviorFeature(data)
         predictors = self.predictor4Prediction()
         feature = self.discretize(predictors)
-        print(feature)
+        # print(feature)
         return feature
 # if __name__ == '__main__':
 #     data = pd.read_pickle("../Data/10_trial_data_Omega.pkl")
