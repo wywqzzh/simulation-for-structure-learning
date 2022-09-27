@@ -141,7 +141,6 @@ class StartegyAgent(Agent):
         data = pd.DataFrame(Series_data)
         feature = self.featureExtractor.extract_feature(data)
         return game_status, feature
-    
 
 
 class singleStartegyAgent(StartegyAgent):
@@ -150,7 +149,9 @@ class singleStartegyAgent(StartegyAgent):
         self.strategy_choice = strategyPolicyTable()
         self.featureExtractor = featureExtractor(map_name)
         self.last_strategy_name = "local"
+
     def getAction(self, state):
+        # TODO: approach会自杀
 
         legal = state.getLegalActions(self.index)
         if 'Stop' in legal:
