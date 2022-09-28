@@ -6,25 +6,18 @@ class strategyPolicyTable:
         self.state_num = {
             "PG1": 3, "GS1": 3,
             "PG2": 3, "GS2": 3,
-            "PE": 3, "BN5": 3, "BN10": 3, "ZBN5": 2, "ZBN10": 2
+            "PE": 3, "BW": 3, "BB": 3, "ZBW": 2, "ZBB": 2
         }
         self.local_table = {}
-        # for i in range(self.state_num["PG1"]):
-        #     for j in range(self.state_num["GS1"]):
-        #         for k in range(self.state_num["ZBN5"]):
-        #             if (j != 0 and k == 0) or (j == 0 and i >= 1 and k == 0):
-        #                 self.local_table.update({str(i) + str(j) + str(k): 1})
-        #             else:
-        #                 self.local_table.update({str(i) + str(j) + str(k): 0.5})
-        for i in range(self.state_num["ZBN5"]):
+        for i in range(self.state_num["ZBW"]):
             if i == 0:
                 self.local_table.update({str(i): 1})
             else:
                 self.local_table.update({str(i): 0.5})
 
         self.global_table = {}
-        for i in range(self.state_num["ZBN5"]):
-            for j in range(self.state_num["ZBN10"]):
+        for i in range(self.state_num["ZBW"]):
+            for j in range(self.state_num["ZBB"]):
                 if i == 1 and j == 0:
                     self.global_table.update({str(i) + str(j): 1})
                 else:
@@ -58,11 +51,9 @@ class strategyPolicyTable:
                             self.approach_table.update({str(i) + str(j) + str(k) + str(l): 0.5})
 
     def get_strategy(self, state):
-        local_state = str(state["PG1"]) + str(state["GS1"]) + str(state["ZBN5"])
-        local_state = str(state["ZBN5"])
-        global_state = str(state["ZBN5"]) + str(state["ZBN10"])
+        local_state = str(state["ZBW"])
+        global_state = str(state["ZBW"]) + str(state["ZBB"])
         evade_state = str(state["PG1"]) + str(state["GS1"]) + str(state["PG2"]) + str(state["GS2"])
-        energizer_state = str(state["PG1"]) + str(state["GS1"]) + str(state["PE"])
         energizer_state = str(state["PE"])
         approach_state = str(state["PG1"]) + str(state["GS1"]) + str(state["PG2"]) + str(state["GS2"])
 
@@ -99,35 +90,35 @@ class twoStrategyPolicyTable:
         self.state_num = {
             "PG1": 3, "GS1": 3,
             "PG2": 3, "GS2": 3,
-            "PE": 3, "BN5": 3, "BN10": 3, "ZBN5": 2, "ZBN10": 2
+            "PE": 3, "BW": 3, "BB": 3, "ZBW": 2, "ZBB": 2
         }
         self.two_strategy = "LG"
         self.strategy = "local"
+        self.two_strategy_end = True
         self.LG_table = {}
-        for i in range(self.state_num["ZBN5"]):
+        for i in range(self.state_num["ZBW"]):
             if i == 0:
                 self.LG_table.update({str(i): 1})
             else:
                 self.LG_table.update({str(i): 0.5})
 
         self.GL_table = {}
-        for i in range(self.state_num["ZBN5"]):
-            for j in range(self.state_num["ZBN10"]):
+        for i in range(self.state_num["ZBW"]):
+            for j in range(self.state_num["ZBB"]):
                 if i == 1 and j == 0:
                     self.GL_table.update({str(i) + str(j): 1})
                 else:
                     self.GL_table.update({str(i) + str(j): 0.5})
 
-        self.EvE_table = {}
+        self.eC_table = {}
         for i in range(self.state_num["PG1"]):
             for j in range(self.state_num["GS1"]):
                 for k in range(self.state_num["PG2"]):
                     for l in range(self.state_num["GS2"]):
-                        for m in range(self.state_num["PE"]):
-                            if (j == 0 and i == 0 and m == 0) or (k == 0 and l == 0 and m == 0):
-                                self.EvE_table.update({str(i) + str(j) + str(k) + str(l): 1})
-                            else:
-                                self.EvE_table.update({str(i) + str(j) + str(k) + str(l): 0.5})
+                        if (j == 0 and i == 0) or (k == 0 and l == 0):
+                            self.eC_table.update({str(i) + str(j) + str(k) + str(l): 1})
+                        else:
+                            self.eC_table.update({str(i) + str(j) + str(k) + str(l): 0.5})
 
         self.EA_table = {}
         for i in range(self.state_num["PG1"]):
@@ -135,43 +126,93 @@ class twoStrategyPolicyTable:
                 for k in range(self.state_num["PG2"]):
                     for l in range(self.state_num["GS2"]):
                         for m in range(self.state_num["PE"]):
-                            if (j != 0 and m <= 0 and i <= 1) or (l != 0 and m <= 0 and k <= 1):
-                                self.EA_table.update({str(i) + str(j) + str(k): 1})
+                            if (j == 0 and m <= 1 and i <= 1) or (l == 0 and m <= 0 and k <= 1):
+                                self.EA_table.update({str(i) + str(j) + str(k) + str(l) + str(m): 1})
                             else:
-                                self.EA_table.update({str(i) + str(j) + str(k): 0.5})
+                                self.EA_table.update({str(i) + str(j) + str(k) + str(l) + str(m): 0.5})
 
     def get_two_strategy(self, state):
-        LG_state = str(state["PG1"]) + str(state["GS1"]) + str(state["ZBN5"])
-        GL_state = str(state["ZBN5"]) + str(state["ZBN10"])
-        evade_state = str(state["PG1"]) + str(state["GS1"]) + str(state["PG2"]) + str(state["GS2"])
+        LG_state = str(state["ZBW"])
+        GL_state = str(state["ZBW"]) + str(state["ZBB"])
+        ec_state = str(state["PG1"]) + str(state["GS1"]) + str(state["PG2"]) + str(state["GS2"])
         EA_state = str(state["PG1"]) + str(state["GS1"]) + str(state["PG2"]) + str(state["GS2"]) + str(state["PE"])
 
-        prob_LG = self.local_table[LG_state]
-        prob_GL = self.global_table[GL_state]
-        prob_evade = self.evade_table[evade_state]
-        prob_EA = self.energizer_table[EA_state]
+        prob_LG = self.LG_table[LG_state]
+        prob_GL = self.GL_table[GL_state]
+        prob_eC = self.eC_table[ec_state]
+        prob_EA = self.EA_table[EA_state]
 
-        stragetegy_name = ["LG", "GL", "evade", "EA"]
-        prob = np.array([prob_LG, prob_GL, prob_evade, prob_EA])
+        stragetegy_name = ["LG", "GL", "eC", "EA"]
+        prob = np.array([prob_LG, prob_GL, prob_eC, prob_EA])
         index = np.where(prob == np.max(prob))[0]
 
         stragetegy = np.array(stragetegy_name)[index]
-        if "evade" in stragetegy:
-            self.strategy = "evade"
-            return "evade"
-        elif "EA" in stragetegy:
-            self.strategy = "energizer"
-            return "EA"
-        elif "LG" in stragetegy:
-            self.strategy = "local"
-            return "LG"
-        elif "GL" in stragetegy:
-            self.strategy = "global"
+        # if "eE" in stragetegy:
+        #     return "eE"
+        if prob[index][0] == 0.5:
             return "GL"
+        else:
+            if "eC" in stragetegy:
+                return "eC"
+            elif "EA" in stragetegy:
+                return "EA"
+            elif "LG" in stragetegy:
+                return "LG"
+            elif "GL" in stragetegy:
+                return "GL"
 
     def get_single_strategy(self, state):
         if self.two_strategy == "LG":
-            pass
+            if state["ZBW"] == 1 and state["ZBB"] == 0:
+                self.strategy = "global"
+                return "global"
+            elif state["ZBW"] == 0:
+                if self.strategy == "global":
+                    self.two_strategy_end = True
+                    return None
+                self.strategy = "local"
+                return "local"
+            else:
+                self.two_strategy_end = True
+
+        if self.two_strategy == "GL":
+            if state["ZBW"] == 0:
+                self.strategy = "local"
+                return "local"
+            elif state["ZBB"] == 0:
+                if self.strategy == "global":
+                    self.two_strategy_end = True
+                    return None
+                self.strategy = "global"
+                return "global"
+            else:
+                self.two_strategy_end = True
+
+        if self.two_strategy == "EA":
+            # TODO:可能会导致自杀
+            if state["GS1"] == 2 or state["GS2"] == 2:
+                self.strategy = "approach"
+                return "approach"
+            elif state["PE"] == 0:
+                if self.strategy == "approach":
+                    self.two_strategy_end = True
+                    return None
+                self.strategy = "energizer"
+                return "energizer"
+            else:
+                self.two_strategy_end = True
+
+        if self.two_strategy == "eC":
+            if (state["PG1"] == 0 and state["GS1"] == 0 and state["PE"] <= 1) or (
+                    state["PG2"] == 0 and state["GS2"] == 0 and state["PE"] <= 1):
+                return "counterattack"
+            elif (state["PG1"] == 0 and state["GS1"] == 0) or (state["PG2"] == 0 and state["GS2"] == 0):
+                if self.strategy == "counterattack":
+                    self.two_strategy_end = True
+                    return None
+                return "evade"
+            else:
+                self.two_strategy_end = True
 
 
 if __name__ == '__main__':

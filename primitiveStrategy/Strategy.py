@@ -82,7 +82,7 @@ class Strategy:
                 exact_reward += self.mapStatus["reward_amount"][1]
                 existing_beans.remove(cur_position)
         # energizer reward
-        if self.strategy_type == "energizer":
+        if self.strategy_type == "energizer" or self.strategy_type == "counterattack":
             if isinstance(existing_energizers, float) or cur_position not in existing_energizers:
                 exact_reward += 0.0
             elif cur_position in existing_energizers:
@@ -102,9 +102,12 @@ class Strategy:
                 if ghost_status[index] != 1:
                     if cur_position == ghost:
                         exact_reward += self.mapStatus["reward_amount"][8]
+                        print(index, ghost_status[index], exact_reward)
                         if ghost_status[index] > 1:
                             ghost_status[index] = 1
                         else:
+                            exact_reward -= (self.mapStatus["reward_amount"][8] + 10)
+                            print(exact_reward)
                             self.is_eaten = True
         return exact_reward, existing_beans, existing_energizers, ghost_status
 
@@ -166,7 +169,11 @@ class Strategy:
 
             exact_reward_list.append(exact_reward)
             exact_risk_list.append(exact_risk)
-
+            if self.strategy_type == "local":
+                cumulative_utility = self.current_node.cumulative_utility + self.args.reward_coeff * exact_reward / (
+                        self.current_node.cur_len + 1) + self.args.risk_coeff * exact_risk
+            else:
+                cumulative_utility = self.current_node.cumulative_utility + self.args.reward_coeff * exact_reward + self.args.risk_coeff * exact_risk
             new_node = anytree.Node(
                 cur_pos,
                 cur_len=self.current_node.cur_len + 1,
@@ -184,7 +191,7 @@ class Strategy:
                 },
                 cumulative_reward=self.current_node.cumulative_reward + exact_reward,
                 cumulative_risk=self.current_node.cumulative_risk + exact_risk,
-                cumulative_utility=self.current_node.cumulative_utility + self.args.reward_coeff * exact_reward + self.args.risk_coeff * exact_risk,
+                cumulative_utility=cumulative_utility,
                 existing_beans=existing_beans,
                 existing_energizers=existing_energizers,
                 ghost_status=ghost_status,
@@ -218,8 +225,6 @@ class Strategy:
             else:
                 ignore = False
             while None != self.current_node:
-                if self.current_node.name == (12, 14):
-                    x = 0
                 self._attachNode(cur_depth=cur_depth, ignore=ignore)
                 self.current_node = self.node_queue.popleft()
             self.node_queue.append(None)
@@ -233,6 +238,7 @@ class Strategy:
             if self.strategy_type == "global" or self.strategy_type == "approach":
                 each.path_utility = each.cumulative_utility / each.cur_len
             elif self.strategy_type == "evade":
+                # 向能走的最远的方向躲避，避免进入死胡同
                 if each.cumulative_utility >= 0:
                     each.path_utility = each.cumulative_utility + each.cur_len
                 else:

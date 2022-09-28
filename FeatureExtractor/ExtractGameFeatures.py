@@ -204,6 +204,16 @@ class featureExtractor:
             ),
             axis=1
         )
+        # Pacman附近10步外豆子数
+        beans_over_5step = trial[["pacmanPos", "beans"]].apply(
+            lambda x: 0 if isinstance(x.beans, float)
+            else len(
+                np.where(
+                    np.array([0 if x.pacmanPos == each else self.locs_df[x.pacmanPos][each] for each in x.beans]) > 5
+                )[0]
+            ),
+            axis=1
+        )
         # 盘面豆子总数
         beans_num = trial[["beans"]].apply(
             lambda x: 0 if isinstance(x.beans, float)
@@ -273,6 +283,7 @@ class featureExtractor:
                 "beans_within_10": beans_10step,
                 "beans_between_5and10": beans_5to10step,
                 "beans_beyond_10": beans_over_10step,
+                "beans_beyond_5": beans_over_5step,
                 "beans_num": beans_num,
                 # "beans_diff": beans_diff,
 
@@ -283,9 +294,6 @@ class featureExtractor:
 
     def predictor4Prediction(self):
         feature_data = deepcopy(self.behavior_features)
-        '''
-        用来预测的属性。
-        '''
         dir_list = ["left", "right", "up", "down"]
         df = feature_data.copy()
         # 移动方向的beans数量
@@ -310,22 +318,38 @@ class featureExtractor:
         df["if_normal2"] = (df.ifscared2 <= 0).astype(int)
         df["if_dead2"] = (df.ifscared2 == 1).astype(int)
         df["if_scared2"] = (df.ifscared2 >= 2).astype(int)
-        df["zero_beans_within_10"] = (df.beans_within_10 == 0).astype(int)
-        df["zero_beans_beyond_10"] = (df.beans_beyond_10 == 0).astype(int)
-        predictors = df[[
-            "PG1", "PG2", "PE",
-            "beans_dir", "beans_num", "beans_within_10", "beans_between_5and10", "beans_beyond_10",
-            "if_scared1", "if_scared2", "if_normal1", "if_normal2", "if_dead1", "if_dead2", "zero_beans_within_10",
-            "zero_beans_beyond_10"]]
-        # normalization
-        continuous_cols = [
-            "PG1", "PG2", "PE",
-            "beans_dir", "beans_num", "beans_within_10", "beans_between_5and10", "beans_beyond_10"
-        ]
+
         max_beans = self.map_num_const["max_beans"]
         max_dist = self.map_num_const["max_dist"]
-        continuous_col_max = np.array(
-            [max_dist] * 3 + [int(max_beans / 4), max_beans, min(25, max_beans), min(75, max_beans), max_beans])
+        # local的定义是10内还是5步内
+        local_num = 5
+        if local_num == 5:
+            df["zero_beans_within_5"] = (df.beans_within_5 == 0).astype(int)
+            df["zero_beans_beyond_5"] = (df.beans_beyond_5 == 0).astype(int)
+            predictors = df[[
+                "PG1", "PG2", "PE", "beans_within_5", "beans_beyond_5",
+                "if_scared1", "if_scared2", "if_normal1", "if_normal2", "if_dead1", "if_dead2",
+                "zero_beans_within_5", "zero_beans_beyond_5"]]
+            # normalization
+            continuous_cols = [
+                "beans_within_5", "beans_beyond_5"
+            ]
+            continuous_col_max = np.array(
+                [min(25, max_beans), max_beans])
+        else:
+            df["zero_beans_within_10"] = (df.beans_within_10 == 0).astype(int)
+            df["zero_beans_beyond_10"] = (df.beans_beyond_10 == 0).astype(int)
+            predictors = df[[
+                "PG1", "PG2", "PE", "beans_within_10", "beans_beyond_10",
+                "if_scared1", "if_scared2", "if_normal1", "if_normal2", "if_dead1", "if_dead2",
+                "zero_beans_within_10", "zero_beans_beyond_10"]]
+            # normalization
+            continuous_cols = [
+                "beans_within_10", "beans_beyond_10"
+            ]
+            continuous_col_max = np.array(
+                [min(50, max_beans), max_beans])
+
         category_cols = ["if_scared1", "if_scared2", "if_normal1", "if_normal2", "if_dead1", "if_dead2"]
         # predictors[continuous_cols] = predictors[continuous_cols] / predictors[continuous_cols].max()
         predictors[continuous_cols] = predictors[continuous_cols] / continuous_col_max
@@ -333,7 +357,7 @@ class featureExtractor:
         for i in category_cols:
             predictors[i] = predictors[i].astype(int).astype("category")
 
-        return predictors
+        return predictors, local_num
 
     def get_map_const(self):
 
@@ -344,8 +368,13 @@ class featureExtractor:
             "max_beans": max_beans
         }
 
-    def discretize(self, data):
-        numerical_cols1 = ["PG1", "PG2", "PE", "beans_within_10", "beans_beyond_10"]
+    def discretize(self, data, local_num):
+
+        # 变量变为categoricall 变量
+        if local_num == 5:
+            numerical_cols1 = ["beans_within_5", "beans_beyond_5"]
+        else:
+            numerical_cols1 = ["beans_within_10", "beans_beyond_10"]
         bin = [0, 0.1, 0.4, 10]
         numerical_encode1 = pd.concat(
             [pd.cut(data[i], bin, right=False, labels=[0, 1, 2]) for i in numerical_cols1
@@ -353,37 +382,39 @@ class featureExtractor:
             axis=1,
         )
         numerical_encode1.columns = numerical_cols1
-        # numerical_cols2 = []
-        # print(data["beans_within_10"])
-        # bin = [0, 0.33, 0.67, 10]
-        # numerical_encode2 = pd.concat(
-        #     [pd.cut(data[i], bin, right=False, labels=[0, 1, 2]) for i in numerical_cols2
-        #      ],
-        #     axis=1,
-        # )
-        # numerical_encode2.columns = numerical_cols2
+
+        numerical_cols2 = ["PG1", "PG2", "PE"]
+        bin = [0, 4, 11, 100]
+        numerical_encode2 = pd.concat(
+            [pd.cut(data[i], bin, right=False, labels=[0, 1, 2]) for i in numerical_cols2
+             ],
+            axis=1,
+        )
+        numerical_encode2.columns = numerical_cols2
+
         numerical_encode = pd.DataFrame()
+        numerical_encode[numerical_cols2] = numerical_encode2[numerical_cols2]
         numerical_encode[numerical_cols1] = numerical_encode1[numerical_cols1]
-        # numerical_encode[numerical_cols2] = numerical_encode2[numerical_cols2]
         is_encode = pd.DataFrame()
         for ghost in [1, 2]:
             cols = ["if_" + i + str(ghost) for i in ["normal", "dead", "scared"]]
             is_encode["GS" + str(ghost)] = np.argmax(data[cols].values, 1)
 
         numerical_encode[["GS1", "GS2"]] = is_encode[["GS1", "GS2"]]
-        numerical_encode[["zero_beans_within_5", "zero_beans_beyond_10"]] = data[
-            ["zero_beans_within_10", "zero_beans_beyond_10"]]
-        numerical_cols = ["PG1", "PG2", "PE", "BN5", "BN10"]
-        numerical_encode.columns = numerical_cols + ["GS1", "GS2", "ZBN5", "ZBN10"]
-        numerical_encode = numerical_encode[["PG1", "GS1", "PG2", "GS2", "PE", "BN5", "BN10", "ZBN5", "ZBN10"]]
-        # print(numerical_encode)
+        if local_num == 5:
+            numerical_encode[["ZBW", "ZBB"]] = data[["zero_beans_within_5", "zero_beans_beyond_5"]]
+        else:
+            numerical_encode[["ZBW", "ZBB"]] = data[["zero_beans_within_10", "zero_beans_beyond_10"]]
+        numerical_cols = ["PG1", "PG2", "PE", "BW", "BB"]
+        numerical_encode.columns = numerical_cols + ["GS1", "GS2", "ZBW", "ZBB"]
+        numerical_encode = numerical_encode[["PG1", "GS1", "PG2", "GS2", "PE", "BW", "BB", "ZBW", "ZBB"]]
         feature = numerical_encode.iloc[0].to_dict()
         return feature
 
     def extract_feature(self, data):
         self.extractBehaviorFeature(data)
-        predictors = self.predictor4Prediction()
-        feature = self.discretize(predictors)
+        predictors, local_num = self.predictor4Prediction()
+        feature = self.discretize(predictors, local_num)
         # print(feature)
         return feature
 # if __name__ == '__main__':

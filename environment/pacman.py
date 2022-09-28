@@ -612,7 +612,7 @@ def readCommand(argv):
         args['numTraining'] = options.numTraining
         if 'numTraining' not in agentOpts:
             agentOpts['numTraining'] = options.numTraining
-    if options.pacman == "singleStartegyAgent":
+    if options.pacman == "singleStartegyAgent" or options.pacman == "twoStartegyAgent":
         pacman = pacmanType(options.layout, **agentOpts)  # Instantiate Pacman with agentArgs
     else:
         pacman = pacmanType(**agentOpts)
@@ -624,9 +624,11 @@ def readCommand(argv):
         options.numIgnore = int(agentOpts['numTrain'])
 
     # Choose a ghost agent
-    ghostType = loadAgent(options.ghost, noKeyboard)
-    args['ghosts'] = [ghostType(i + 1) for i in range(options.numGhosts)]
-
+    ghostType1 = loadAgent(options.ghost, noKeyboard)
+    ghostType2 = loadAgent("DirectionalGhost", noKeyboard)
+    args['ghosts'] = [ghostType2(1), ghostType2(2)]
+    # args['ghosts'] = [ghostType(i + 1) for i in range(options.numGhosts)]
+    
     # Choose a display format
     if options.quietGraphics:
         import textDisplay
@@ -738,7 +740,7 @@ def runGames(trial, layout, horizon, pacman, ghosts, display, numGames, record, 
             # Suppress output and graphics
 
             gameDisplay = textDisplay.NullGraphics()
-            gameDisplay = display
+            # gameDisplay = display
             rules.quiet = True
         else:
             gameDisplay = display
