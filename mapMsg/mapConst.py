@@ -161,8 +161,8 @@ def get_intersection(map_name):
 
 
 if __name__ == '__main__':
-    filename = "../environment/layouts/originalClassic.lay"
-    # runMapConst(filename)
-    # create_adjacent_map(filename.split("/")[-1][:-4])
-    # create_dij_distance_map(filename.split("/")[-1][:-4])
+    filename = "../environment/layouts/originalClassic1.lay"
+    runMapConst(filename)
+    create_adjacent_map(filename.split("/")[-1][:-4])
+    create_dij_distance_map(filename.split("/")[-1][:-4])
     get_intersection(filename.split("/")[-1][:-4])

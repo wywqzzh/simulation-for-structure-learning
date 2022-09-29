@@ -102,12 +102,12 @@ class Strategy:
                 if ghost_status[index] != 1:
                     if cur_position == ghost:
                         exact_reward += self.mapStatus["reward_amount"][8]
-                        print(index, ghost_status[index], exact_reward)
+                        # print(index, ghost_status[index], exact_reward)
                         if ghost_status[index] > 1:
                             ghost_status[index] = 1
                         else:
                             exact_reward -= (self.mapStatus["reward_amount"][8] + 10)
-                            print(exact_reward)
+                            # print(exact_reward)
                             self.is_eaten = True
         return exact_reward, existing_beans, existing_energizers, ghost_status
 
@@ -357,7 +357,7 @@ if __name__ == '__main__':
 
     strategy = Strategy(strategy_type, adjacent_data, locs_df, reward_amount, args)
     for index in range(len(result)):
-        print(index)
+        # print(index)
         cur_pos = result["pacmanPos"][index]
         ghost_data = [result["ghost1Pos"][index], result["ghost2Pos"][index]]
         ghost_status = [result["ifscared1"][index], result["ifscared2"][index]]
@@ -368,4 +368,4 @@ if __name__ == '__main__':
         strategy.set_state(cur_pos, energizer_data, bean_data, ghost_data, ghost_status, last_dir)
         _, Q = strategy.nextDir(return_Q=True)
         choice = strategy.mapStatus["dir_list"][makeChoice(Q)]
-        print(strategy_type + " Choice : ", choice, Q)
+        # print(strategy_type + " Choice : ", choice, Q)

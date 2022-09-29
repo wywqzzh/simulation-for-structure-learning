@@ -169,11 +169,11 @@ class singleStartegyAgent(StartegyAgent):
         # strategy_name = "approach"
         cur_pos = change_pos(state.data.agentStates[0].configuration.pos, self.layout_h)
         if cur_pos in self.intersection_data or strategy_name == "evade" or self.last_strategy_name == "evade":
-            print("change strategy,", cur_pos)
+            # print("change strategy,", cur_pos)
             self.last_strategy_name = strategy_name
         else:
             strategy_name = self.last_strategy_name
-        print(strategy_name)
+        # print(strategy_name)
         strategy = self.startegies[strategy_name]
         # strategy = self.startegies["approach"]
         strategy.set_state(game_status)
@@ -183,8 +183,8 @@ class singleStartegyAgent(StartegyAgent):
         dir_dict = {"left": Directions.WEST, "right": Directions.EAST, "up": Directions.NORTH, "down": Directions.SOUTH
                     }
         move = dir_dict[choice]
-        if strategy_name == "approach":
-            print(Q)
+        # if strategy_name == "approach":
+        #     print(Q)
         return move
 
 
@@ -202,7 +202,7 @@ class twoStartegyAgent(StartegyAgent):
             legal.remove('Stop')
 
         game_status, feature = self.state_to_feature(state)
-        feature={'PG1': 1, 'GS1': 0, 'PG2': 2, 'GS2': 0, 'PE': 1, 'BW': 0, 'BB': 1, 'ZBW': 1, 'ZBB': 0}
+        # feature={'PG1': 1, 'GS1': 0, 'PG2': 2, 'GS2': 0, 'PE': 1, 'BW': 0, 'BB': 1, 'ZBW': 1, 'ZBB': 0}
         # choose strategy
         two_strategy_name = self.strategy_choice.get_two_strategy(feature)
         strategy_name = self.strategy_choice.get_single_strategy(feature)

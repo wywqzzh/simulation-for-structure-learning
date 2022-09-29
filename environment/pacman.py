@@ -481,6 +481,7 @@ class GhostRules:
                 state.data.scoreChange -= 500
                 # state.data._lose = True
                 state.data._lose = False
+                state.data.pacman_dead = True
                 state.data.agentStates[0].configuration = Configuration(state.data.agentStates[0].start.pos,
                                                                         state.data.agentStates[
                                                                             0].configuration.direction,
@@ -579,12 +580,15 @@ def readCommand(argv):
                       help='Turns on exception handling and timeouts during games', default=False)
     parser.add_option('--timeout', dest='timeout', type='int',
                       help=default('Maximum length of time an agent can spend computing in a single game'), default=30)
+    parser.add_option('--sn', dest='startNum', type='int',
+                      help=default('start num of file'), default=0)
 
     options, otherjunk = parser.parse_args(argv)
+
     if len(otherjunk) != 0:
         raise Exception('Command line input not understood: ' + str(otherjunk))
     args = dict()
-
+    args["startNum"] = options.startNum
     # Fix the random seed
     if options.fixRandomSeed:
         random.seed('cs188')
@@ -628,7 +632,7 @@ def readCommand(argv):
     ghostType2 = loadAgent("DirectionalGhost", noKeyboard)
     args['ghosts'] = [ghostType2(1), ghostType2(2)]
     # args['ghosts'] = [ghostType(i + 1) for i in range(options.numGhosts)]
-    
+
     # Choose a display format
     if options.quietGraphics:
         import textDisplay
@@ -714,7 +718,7 @@ def replayGame(layout, actions, display):
 
 
 def runGames(trial, layout, horizon, pacman, ghosts, display, numGames, record, numTraining=0, catchExceptions=False,
-             timeout=30):
+             timeout=30, startNum=0):
     import __main__
     __main__.__dict__['_display'] = display
 
@@ -729,10 +733,12 @@ def runGames(trial, layout, horizon, pacman, ghosts, display, numGames, record, 
     state_sequences = []
     action_sequences = []
     reward_sequences = []
-    files = []
+    dead_sequences = []
+    file_num = startNum
     #####################################
     import textDisplay
     for i in range(numGames):
+        print(i)
         # if i % 10 == 0:
         #     print("numGames played: [{}/{}]".format(i, numGames))
         beQuiet = i < numTraining
@@ -749,12 +755,24 @@ def runGames(trial, layout, horizon, pacman, ghosts, display, numGames, record, 
         game = rules.newGame(layout, horizon, pacman, ghosts,
                              gameDisplay, beQuiet, catchExceptions)
         #####################################
-        state_sequence, action_sequence, reward_sequence = game.run()
-        if beQuiet == False:
-            state_sequences.append(deepcopy(state_sequence))
-            action_sequences.append(deepcopy(action_sequence))
-            reward_sequences.append(deepcopy(reward_sequence))
-            files.append(date + '-' + str(trial) + '-' + str(i - numTraining + 1))
+        state_sequence, action_sequence, reward_sequence, dead_sequence = game.run()
+
+        state_sequences.append(deepcopy(state_sequence))
+        action_sequences.append(deepcopy(action_sequence))
+        reward_sequences.append(deepcopy(reward_sequence))
+        dead_sequences.append(deepcopy(dead_sequence))
+        if (i + 1) % 10 == 0:
+            print("save!")
+            result = {
+                "states": state_sequences,
+                "actions": action_sequences,
+                "deads": dead_sequences,
+                "rewards": reward_sequences
+            }
+            import pickle
+            with open("../Data/game_status/" + str(file_num) + ".pkl", "wb") as file:
+                pickle.dump(result, file)
+            file_num += 1
         #####################################
         if not beQuiet:
             games.append(game)
@@ -802,17 +820,3 @@ if __name__ == '__main__':
     args, option = readCommand(sys.argv[1:])  # Get game components based on input
     # print(option.layout)
     games, state_sequences, action_sequences, files, reward_sequences = runGames(trial, **args)
-
-    print(reward_sequences)
-    result = {
-        "states": state_sequences,
-        "actions": action_sequences,
-        "files": files,
-        "rewards": reward_sequences
-    }
-    print(result)
-    with open("./sequence_data/" + option.layout + ".pkl", "wb") as file:
-        pickle.dump(result, file)
-    # import cProfile
-    # cProfile.run("runGames( **args )")
-    pass

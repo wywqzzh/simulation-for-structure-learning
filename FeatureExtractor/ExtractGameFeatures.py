@@ -322,7 +322,7 @@ class featureExtractor:
         max_beans = self.map_num_const["max_beans"]
         max_dist = self.map_num_const["max_dist"]
         # local的定义是10内还是5步内
-        local_num = 5
+        local_num = 10
         if local_num == 5:
             df["zero_beans_within_5"] = (df.beans_within_5 == 0).astype(int)
             df["zero_beans_beyond_5"] = (df.beans_beyond_5 == 0).astype(int)

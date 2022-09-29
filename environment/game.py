@@ -423,6 +423,7 @@ class GameStateData:
         self._capsuleEaten = None
         self._agentMoved = None
         self._lose = False
+        self.pacman_dead = False
         self._win = False
         self.scoreChange = 0
 
@@ -632,6 +633,7 @@ class Game:
         state_sequence = []
         action_sequence = []
         reward_sequence = []
+        dead_sequence = []
         #################################################
         for i in range(len(self.agents)):
             agent = self.agents[i]
@@ -780,6 +782,8 @@ class Game:
                 self.state = self.state.generateSuccessor(agentIndex, action)
                 if agentIndex == 0:
                     reward_sequence.append(self.state.data.scoreChange)
+                    dead_sequence.append(self.state.data.pacman_dead)
+                    self.state.data.pacman_dead = False
 
             # Change the display
             self.display.update(self.state.data)
@@ -811,4 +815,4 @@ class Game:
                     self.unmute()
                     return
         self.display.finish()
-        return state_sequence, action_sequence, reward_sequence
+        return state_sequence, action_sequence, reward_sequence, dead_sequence

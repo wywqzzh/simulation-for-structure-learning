@@ -193,7 +193,7 @@ class twoStrategyPolicyTable:
             if state["GS1"] == 2 or state["GS2"] == 2:
                 self.strategy = "approach"
                 return "approach"
-            elif state["PE"] == 0:
+            elif state["PE"] <= 1:
                 if self.strategy == "approach":
                     self.two_strategy_end = True
                     return None
