@@ -79,7 +79,7 @@ class Strategy:
             if isinstance(existing_beans, float):
                 exact_reward += 0.0
             elif cur_position in existing_beans:
-                exact_reward += self.mapStatus["reward_amount"][1]
+                exact_reward += self.mapStatus["reward_amount"]["bean"]
                 existing_beans.remove(cur_position)
         # energizer reward
         if self.strategy_type == "energizer" or self.strategy_type == "counterattack":
@@ -87,7 +87,7 @@ class Strategy:
                 exact_reward += 0.0
             elif cur_position in existing_energizers:
                 # Reward for eating the energizer
-                exact_reward += self.mapStatus["reward_amount"][2]
+                exact_reward += self.mapStatus["reward_amount"]["energizer"]
                 existing_energizers.remove(cur_position)
                 # TODO:改变ghost的状态
                 ghost_status = [2 if each != 1 else 1 for each in ghost_status]  # change ghost status
@@ -101,7 +101,7 @@ class Strategy:
                 ghost = (int(ghost[0]), int(ghost[1]))
                 if ghost_status[index] != 1:
                     if cur_position == ghost:
-                        exact_reward += self.mapStatus["reward_amount"][8]
+                        exact_reward += self.mapStatus["reward_amount"]["ghost"]
                         # print(index, ghost_status[index], exact_reward)
                         if ghost_status[index] > 1:
                             ghost_status[index] = 1
@@ -123,12 +123,12 @@ class Strategy:
         # TODO: 改变ghost的状态
         if ifscared1 == 0 and cur_position == self.gameStatus["ghost_data"][0]:
             self.is_eaten = True
-            if self.strategy_type == "evade":
-                exact_risk = -self.mapStatus["reward_amount"][9]
+            exact_risk = -self.mapStatus["reward_amount"]["eaten"]
+            print("eaten by 1:", exact_risk)
         if ifscared2 == 0 and cur_position == self.gameStatus["ghost_data"][1]:
             self.is_eaten = True
-            if self.strategy_type == "evade":
-                exact_risk = -self.mapStatus["reward_amount"][9]
+            exact_risk = -self.mapStatus["reward_amount"]["eaten"]
+            print("eaten by 2:", exact_risk)
         return exact_risk
 
     def _attachNode(self, cur_depth=0, ignore=False):
@@ -167,11 +167,10 @@ class Strategy:
 
             exact_reward_list.append(exact_reward)
             exact_risk_list.append(exact_risk)
-            if self.strategy_type == "local":
-                cumulative_utility = self.current_node.cumulative_utility + self.args.reward_coeff * exact_reward / (
-                        self.current_node.cur_len + 1) + self.args.risk_coeff * exact_risk
-            else:
-                cumulative_utility = self.current_node.cumulative_utility + self.args.reward_coeff * exact_reward + self.args.risk_coeff * exact_risk
+            cumulative_utility = self.current_node.cumulative_utility + self.args.reward_coeff * exact_reward / (
+                    self.current_node.cur_len + 1) + self.args.risk_coeff * exact_risk / (self.current_node.cur_len + 1)
+            cumulative_reward = self.current_node.cumulative_reward + exact_reward / (self.current_node.cur_len + 1)
+            cumulative_risk = self.current_node.cumulative_risk + exact_risk / (self.current_node.cur_len + 1)
             new_node = anytree.Node(
                 cur_pos,
                 cur_len=self.current_node.cur_len + 1,
@@ -187,8 +186,8 @@ class Strategy:
                 cur_risk={
                     "exact_risk": exact_risk,
                 },
-                cumulative_reward=self.current_node.cumulative_reward + exact_reward,
-                cumulative_risk=self.current_node.cumulative_risk + exact_risk,
+                cumulative_reward=cumulative_reward,
+                cumulative_risk=cumulative_risk,
                 cumulative_utility=cumulative_utility,
                 existing_beans=existing_beans,
                 existing_energizers=existing_energizers,

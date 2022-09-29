@@ -761,10 +761,13 @@ class Game:
                 if agentIndex == 0:
                     state_sequence.append(deepcopy(observation))
                 #################################################
-                action, strategy_name = agent.getAction(observation)
+                if agentIndex != 0:
+                    action = agent.getAction(observation)
                 #################################################
                 if agentIndex == 0:
+                    action, strategy_name = agent.getAction(observation)
                     action_sequence.append(deepcopy(action))
+                    strategy_sequence.append(strategy_name)
                 #################################################
             self.unmute()
 
@@ -816,4 +819,4 @@ class Game:
                     self.unmute()
                     return
         self.display.finish()
-        return state_sequence, action_sequence, reward_sequence, dead_sequence
+        return state_sequence, action_sequence, reward_sequence, dead_sequence, strategy_sequence

@@ -13,7 +13,6 @@ import pandas as pd
 import numpy as np
 
 
-
 def readAdjacentMap(filename):
     '''
     Read in the adjacent info of the map.
@@ -22,7 +21,7 @@ def readAdjacentMap(filename):
     '''
     adjacent_data = pd.read_csv(filename)
     for each in ['pos', 'left', 'right', 'up', 'down']:
-        adjacent_data[each] = adjacent_data[each].apply(lambda x : eval(x) if not isinstance(x, float) else np.nan)
+        adjacent_data[each] = adjacent_data[each].apply(lambda x: eval(x) if not isinstance(x, float) else np.nan)
     dict_adjacent_data = {}
     for each in adjacent_data.values:
         dict_adjacent_data[each[1]] = {}
@@ -72,7 +71,7 @@ def readLocDistance(filename):
     :return: A pandas.DataFrame denoting the dijkstra distance between every two locations of the map. 
     '''
     locs_df = pd.read_csv(filename)[["pos1", "pos2", "dis"]]
-    locs_df.pos1, locs_df.pos2= (
+    locs_df.pos1, locs_df.pos2 = (
         locs_df.pos1.apply(eval),
         locs_df.pos2.apply(eval)
     )
@@ -92,24 +91,36 @@ def readLocDistance(filename):
     return dict_locs_df
 
 
+# def readRewardAmount():
+#     '''
+#     Reward amount for every type of reward
+#     :return: A dictionary denoting the reward amount of each type of reward.
+#     '''
+#     reward_amount = {
+#         1:2, # bean
+#         2:4, # energizer (default as 4)
+#         3:3, # cherry
+#         4:5, # strawberry
+#         5:8, # orange
+#         6:12, # apple
+#         7:17, # melon
+#         8:8, # ghost
+#         9:8 # eaten by ghost
+#     }
+#     return reward_amount
+
 def readRewardAmount():
     '''
     Reward amount for every type of reward
     :return: A dictionary denoting the reward amount of each type of reward.
     '''
     reward_amount = {
-        1:2, # bean
-        2:4, # energizer (default as 4)
-        3:3, # cherry
-        4:5, # strawberry
-        5:8, # orange
-        6:12, # apple
-        7:17, # melon
-        8:8, # ghost
-        9:8 # eaten by ghost
+        "bean": 2,  # bean
+        "energizer": 4,  # energizer (default as 4)
+        "ghost": 8,  # ghost
+        "eaten": 20  # eaten by ghost
     }
     return reward_amount
-
 
 
 if __name__ == '__main__':

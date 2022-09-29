@@ -739,6 +739,7 @@ def runGames(trial, layout, horizon, pacman, ghosts, display, numGames, record, 
     action_sequences = []
     reward_sequences = []
     dead_sequences = []
+    strategy_sequences = []
     file_num = startNum
     #####################################
     import textDisplay
@@ -760,19 +761,21 @@ def runGames(trial, layout, horizon, pacman, ghosts, display, numGames, record, 
         game = rules.newGame(layout, horizon, pacman, ghosts,
                              gameDisplay, beQuiet, catchExceptions)
         #####################################
-        state_sequence, action_sequence, reward_sequence, dead_sequence = game.run()
+        state_sequence, action_sequence, reward_sequence, dead_sequence, strategy_sequence = game.run()
 
         state_sequences.append(deepcopy(state_sequence))
         action_sequences.append(deepcopy(action_sequence))
         reward_sequences.append(deepcopy(reward_sequence))
         dead_sequences.append(deepcopy(dead_sequence))
+        strategy_sequences.append(deepcopy(strategy_sequence))
         if (i + 1) % 10 == 0:
             print("save!")
             result = {
                 "states": state_sequences,
                 "actions": action_sequences,
                 "deads": dead_sequences,
-                "rewards": reward_sequences
+                "rewards": reward_sequences,
+                "strategy_sequences": strategy_sequences
             }
             import pickle
             with open("../Data/game_status/" + str(file_num) + ".pkl", "wb") as file:
