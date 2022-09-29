@@ -106,8 +106,6 @@ class Strategy:
                         if ghost_status[index] > 1:
                             ghost_status[index] = 1
                         else:
-                            exact_reward -= (self.mapStatus["reward_amount"][8] + 10)
-                            # print(exact_reward)
                             self.is_eaten = True
         return exact_reward, existing_beans, existing_energizers, ghost_status
 

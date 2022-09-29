@@ -634,6 +634,7 @@ class Game:
         action_sequence = []
         reward_sequence = []
         dead_sequence = []
+        strategy_sequence = []
         #################################################
         for i in range(len(self.agents)):
             agent = self.agents[i]
@@ -760,7 +761,7 @@ class Game:
                 if agentIndex == 0:
                     state_sequence.append(deepcopy(observation))
                 #################################################
-                action = agent.getAction(observation)
+                action, strategy_name = agent.getAction(observation)
                 #################################################
                 if agentIndex == 0:
                     action_sequence.append(deepcopy(action))

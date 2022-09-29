@@ -18,7 +18,13 @@ import os
 from pacman import GameState
 import pandas as pd
 from copy import deepcopy
-with open("../Data/game_status/0.pkl", "rb") as file:
-    x = pickle.load(file)
+
+datas=[]
+num=6
+for i in range(num):
+    with open("../Data/game_status/0.pkl", "rb") as file:
+        x = pickle.load(file)
+
+
 
 x = 0
