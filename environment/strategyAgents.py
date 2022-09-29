@@ -58,7 +58,7 @@ def change_pos(pos, numRow):
     return temp_pos
 
 
-class StartegyAgent(Agent):
+class StartegyAgents(Agent):
     def __init__(self, map_name="smallGrid", index=0, **arg):
         self.lastMove = Directions.STOP
         self.map_name = map_name
@@ -149,9 +149,9 @@ class StartegyAgent(Agent):
         return game_status, feature
 
 
-class singleStartegyAgent(StartegyAgent):
+class singleStartegyAgents(StartegyAgents):
     def __init__(self, map_name="smallGrid", index=0, **arg):
-        super(singleStartegyAgent, self).__init__(map_name)
+        super(singleStartegyAgents, self).__init__(map_name)
         self.strategy_choice = strategyPolicyTable()
         self.last_strategy_name = "local"
 
@@ -188,9 +188,9 @@ class singleStartegyAgent(StartegyAgent):
         return move
 
 
-class twoStartegyAgent(StartegyAgent):
+class twoStartegyAgents(StartegyAgents):
     def __init__(self, map_name="smallGrid", index=0, **arg):
-        super(twoStartegyAgent, self).__init__(map_name)
+        super(twoStartegyAgents, self).__init__(map_name)
         self.strategy_choice = twoStrategyPolicyTable()
         self.featureExtractor = featureExtractor(map_name)
 

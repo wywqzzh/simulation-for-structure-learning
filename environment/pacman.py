@@ -49,9 +49,12 @@ from util import nearestPoint
 from util import manhattanDistance
 import layout
 import sys
+
+sys.path.append("../")
 import random
 import os
 import warnings
+from strategyAgents import singleStartegyAgents, twoStartegyAgents
 
 warnings.filterwarnings('ignore')
 
@@ -603,7 +606,7 @@ def readCommand(argv):
     # Choose a Pacman agent
     noKeyboard = options.gameToReplay == None and (
             options.textGraphics or options.quietGraphics)
-    pacmanType = loadAgent(options.pacman, noKeyboard)
+    # pacmanType = loadAgent(options.pacman, noKeyboard)
     if options.pacman == "PacmanDeepQAgent":
         print("options.agentArgs", options.agentArgs)
         layout_str = "layout_input={}".format(options.layout)
@@ -616,10 +619,12 @@ def readCommand(argv):
         args['numTraining'] = options.numTraining
         if 'numTraining' not in agentOpts:
             agentOpts['numTraining'] = options.numTraining
-    if options.pacman == "singleStartegyAgent" or options.pacman == "twoStartegyAgent":
-        pacman = pacmanType(options.layout, **agentOpts)  # Instantiate Pacman with agentArgs
+    if options.pacman == "singleStartegyAgents":
+        pacman = singleStartegyAgents(options.layout, 0, **agentOpts)
+    elif options.pacman == "twoStartegyAgents":
+        pacman = twoStartegyAgents(options.layout, 0, **agentOpts)  # Instantiate Pacman with agentArgs
     else:
-        pacman = pacmanType(**agentOpts)
+        pass
     args['pacman'] = pacman
 
     # Don't display training games
