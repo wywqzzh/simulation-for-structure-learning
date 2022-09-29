@@ -124,11 +124,11 @@ class Strategy:
         if ifscared1 == 0 and cur_position == self.gameStatus["ghost_data"][0]:
             self.is_eaten = True
             exact_risk = -self.mapStatus["reward_amount"]["eaten"]
-            print("eaten by 1:", exact_risk)
+            # print("eaten by 1:", exact_risk)
         if ifscared2 == 0 and cur_position == self.gameStatus["ghost_data"][1]:
             self.is_eaten = True
             exact_risk = -self.mapStatus["reward_amount"]["eaten"]
-            print("eaten by 2:", exact_risk)
+            # print("eaten by 2:", exact_risk)
         return exact_risk
 
     def _attachNode(self, cur_depth=0, ignore=False):

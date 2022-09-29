@@ -169,7 +169,7 @@ class singleStartegyAgents(StartegyAgents):
             self.last_strategy_name = strategy_name
         else:
             strategy_name = self.last_strategy_name
-        print(strategy_name)
+        # print(strategy_name)
         strategy = self.startegies[strategy_name]
         # strategy = self.startegies["approach"]
         strategy.set_state(game_status)
