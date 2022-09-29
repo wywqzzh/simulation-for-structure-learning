@@ -584,7 +584,7 @@ def readCommand(argv):
     parser.add_option('--timeout', dest='timeout', type='int',
                       help=default('Maximum length of time an agent can spend computing in a single game'), default=30)
     parser.add_option('--sn', dest='startNum', type='int',
-                      help=default('start num of file'), default=0)
+                      help=default('start num of file'), default=10)
 
     options, otherjunk = parser.parse_args(argv)
 

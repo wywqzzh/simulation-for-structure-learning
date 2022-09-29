@@ -108,40 +108,38 @@ class twoStrategyPolicyTable:
                 else:
                     self.GL_table.update({str(i) + str(j): 0.5})
 
-        self.eC_table = {}
-        for i in range(self.state_num["PG1"]):
-            for j in range(self.state_num["GS1"]):
-                for k in range(self.state_num["PG2"]):
-                    for l in range(self.state_num["GS2"]):
-                        if (j == 0 and i == 0) or (k == 0 and l == 0):
-                            self.eC_table.update({str(i) + str(j) + str(k) + str(l): 1})
-                        else:
-                            self.eC_table.update({str(i) + str(j) + str(k) + str(l): 0.5})
+        # self.eC_table = {}
+        # for i in range(self.state_num["PG1"]):
+        #     for j in range(self.state_num["GS1"]):
+        #         for k in range(self.state_num["PG2"]):
+        #             for l in range(self.state_num["GS2"]):
+        #                 if (j == 0 and i == 0) or (k == 0 and l == 0):
+        #                     self.eC_table.update({str(i) + str(j) + str(k) + str(l): 1})
+        #                 else:
+        #                     self.eC_table.update({str(i) + str(j) + str(k) + str(l): 0.5})
 
         self.EA_table = {}
         for i in range(self.state_num["PG1"]):
-            for j in range(self.state_num["GS1"]):
-                for k in range(self.state_num["PG2"]):
-                    for l in range(self.state_num["GS2"]):
-                        for m in range(self.state_num["PE"]):
-                            if (j == 0 and m <= 1 and i <= 1) or (l == 0 and m <= 0 and k <= 1):
-                                self.EA_table.update({str(i) + str(j) + str(k) + str(l) + str(m): 1})
-                            else:
-                                self.EA_table.update({str(i) + str(j) + str(k) + str(l) + str(m): 0.5})
+            for k in range(self.state_num["PG2"]):
+                for m in range(self.state_num["PE"]):
+                    if (m <= 1 and i <= 1) or (m <= 1 and k <= 1):
+                        self.EA_table.update({str(i) + str(k) + str(m): 1})
+                    else:
+                        self.EA_table.update({str(i) + str(k) + str(m): 0.5})
 
     def get_two_strategy(self, state):
         LG_state = str(state["ZBW"])
         GL_state = str(state["ZBW"]) + str(state["ZBB"])
-        ec_state = str(state["PG1"]) + str(state["GS1"]) + str(state["PG2"]) + str(state["GS2"])
-        EA_state = str(state["PG1"]) + str(state["GS1"]) + str(state["PG2"]) + str(state["GS2"]) + str(state["PE"])
+        # ec_state = str(state["PG1"]) + str(state["GS1"]) + str(state["PG2"]) + str(state["GS2"])
+        EA_state = str(state["PG1"])  + str(state["PG2"])  + str(state["PE"])
 
         prob_LG = self.LG_table[LG_state]
         prob_GL = self.GL_table[GL_state]
-        prob_eC = self.eC_table[ec_state]
+        # prob_eC = self.eC_table[ec_state]
         prob_EA = self.EA_table[EA_state]
 
-        stragetegy_name = ["LG", "GL", "eC", "EA"]
-        prob = np.array([prob_LG, prob_GL, prob_eC, prob_EA])
+        stragetegy_name = ["LG", "GL", "EA"]
+        prob = np.array([prob_LG, prob_GL, prob_EA])
         index = np.where(prob == np.max(prob))[0]
 
         stragetegy = np.array(stragetegy_name)[index]
@@ -150,9 +148,7 @@ class twoStrategyPolicyTable:
         if prob[index][0] == 0.5:
             return "GL"
         else:
-            if "eC" in stragetegy:
-                return "eC"
-            elif "EA" in stragetegy:
+            if "EA" in stragetegy:
                 return "EA"
             elif "LG" in stragetegy:
                 return "LG"
@@ -187,7 +183,6 @@ class twoStrategyPolicyTable:
                 self.two_strategy_end = True
 
         if self.two_strategy == "EA":
-            # TODO:可能会导致自杀
             if state["GS1"] == 2 or state["GS2"] == 2:
                 self.strategy = "approach"
                 return "approach"
@@ -200,17 +195,17 @@ class twoStrategyPolicyTable:
             else:
                 self.two_strategy_end = True
 
-        if self.two_strategy == "eC":
-            if (state["PG1"] == 0 and state["GS1"] == 0 and state["PE"] <= 1) or (
-                    state["PG2"] == 0 and state["GS2"] == 0 and state["PE"] <= 1):
-                return "counterattack"
-            elif (state["PG1"] == 0 and state["GS1"] == 0) or (state["PG2"] == 0 and state["GS2"] == 0):
-                if self.strategy == "counterattack":
-                    self.two_strategy_end = True
-                    return None
-                return "evade"
-            else:
-                self.two_strategy_end = True
+        # if self.two_strategy == "eC":
+        #     if (state["PG1"] == 0 and state["GS1"] == 0 and state["PE"] <= 1) or (
+        #             state["PG2"] == 0 and state["GS2"] == 0 and state["PE"] <= 1):
+        #         return "counterattack"
+        #     elif (state["PG1"] == 0 and state["GS1"] == 0) or (state["PG2"] == 0 and state["GS2"] == 0):
+        #         if self.strategy == "counterattack":
+        #             self.two_strategy_end = True
+        #             return None
+        #         return "evade"
+        #     else:
+        #         self.two_strategy_end = True
 
 
 if __name__ == '__main__':

@@ -212,7 +212,7 @@ class twoStartegyAgents(StartegyAgents):
                 strategy_name = self.strategy_choice.get_single_strategy(feature)
             if two_strategy_name == "eC" and strategy_name == None:
                 strategy_name = self.strategy_choice.get_single_strategy(feature)
-        print(self.strategy_choice.two_strategy, strategy_name)
+        # print(self.strategy_choice.two_strategy, strategy_name)
         strategy = self.startegies[strategy_name]
         strategy.set_state(game_status)
         _, Q = strategy.nextDir(return_Q=True)
@@ -221,6 +221,4 @@ class twoStartegyAgents(StartegyAgents):
         dir_dict = {"left": Directions.WEST, "right": Directions.EAST, "up": Directions.NORTH, "down": Directions.SOUTH
                     }
         move = dir_dict[choice]
-        if strategy_name == "approach":
-            print(Q)
-        return move
+        return move, strategy_name
