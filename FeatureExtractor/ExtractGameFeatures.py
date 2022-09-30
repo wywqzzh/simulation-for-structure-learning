@@ -5,6 +5,7 @@ from environment import layout
 from copy import deepcopy
 
 sys.path.append("../../Utils/")
+sys.path.append("../environment")
 from Utils.FileUtils import readAdjacentMap, readLocDistance, readAdjacentPath
 
 inf_val = 50  # 空数据的默认值（e.g., 地图中不存在水果时，Pacman和水果的距离就设置为50）

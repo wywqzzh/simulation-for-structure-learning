@@ -17,7 +17,9 @@ from game import Grid
 import os
 import random
 from functools import reduce
+import sys
 
+sys.path.append("../environment")
 VISIBILITY_MATRIX_CACHE = {}
 
 
@@ -155,7 +157,9 @@ def getLayout(name, back=2):
 
 
 def tryToLoad(fullname):
-    if(not os.path.exists(fullname)):
+    x = os.path.realpath(__file__).split("\\")[:-1]
+    fullname = "/".join(x)+"/"+fullname
+    if (not os.path.exists(fullname)):
         return None
     f = open(fullname)
     try:
