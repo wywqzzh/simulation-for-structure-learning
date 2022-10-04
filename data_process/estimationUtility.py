@@ -45,7 +45,8 @@ class utilityEstimator:
         return args
 
     def get_strategies(self, map_name):
-        import layout
+        # import layout
+        from environment import layout
         layout = layout.getLayout(map_name).layoutText
         h = len(layout)
         w = len(layout[0])
@@ -111,7 +112,7 @@ def estimateUnitility(filename):
             "bean_data": each["beans"],
             "energizer_data": each["energizers"],
             "Reward": [],
-            "last_dir": each["next_pacman_dir_fill"]
+            "last_dir": each["last_dir"]
 
         }
         game_status_.append(game_status)

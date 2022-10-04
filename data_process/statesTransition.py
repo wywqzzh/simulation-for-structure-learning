@@ -138,10 +138,10 @@ def transition():
     data["beans"] = beans
     data["energizers"] = energizers
     data["pacman_dir"] = data["pacman_dir"].apply(lambda x: direction_transition(x))
-    data["next_pacman_dir_fill"] = [None] + list(data["pacman_dir"])[:-1]
+    data["last_dir"] = [None] + list(data["pacman_dir"])[:-1]
     data = data[
         ["file", "pacmanPos", "ghost1Pos", "ghost2Pos", "ifscared1", "ifscared2", "beans", "energizers", "Reward",
-         "pacman_dir", "next_pacman_dir_fill", "strategy"]]
+         "pacman_dir", "last_dir"]]
 
     data.to_pickle("../Data/process/10trial_gameStatus.pkl")
 
