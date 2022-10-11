@@ -85,15 +85,16 @@ def direction_transition(x):
 
 
 def transition():
-    num = 11
+    num = 10
     state = []
     action = []
     reward = []
     dead = []
     strategy = []
+    strategy_utility = []
     files = []
     number = 1
-    for i in range(10, num):
+    for i in range(0, num):
         with open("../Data/game_status/" + str(i) + ".pkl", "rb") as file:
             data = pickle.load(file)
             for j in range(len(data["states"])):
@@ -102,6 +103,7 @@ def transition():
                 reward += data["rewards"][j]
                 dead += data["deads"][j]
                 strategy += data["strategy_sequences"][j]
+                strategy_utility += data["strategy_utility_sequences"][j]
                 files += ["biStrategy_" + str(number)] * len(data["deads"][j])
                 number += 1
     data = {
@@ -110,7 +112,8 @@ def transition():
         "Reward": reward,
         "dead": dead,
         "file": files,
-        "strategy": strategy
+        "strategy": strategy,
+        "strategy_utility": strategy_utility
     }
     data = pd.DataFrame(data)
     game_status = data["state"].apply(lambda x: state_to_feature(x))
@@ -141,9 +144,9 @@ def transition():
     data["last_dir"] = [None] + list(data["pacman_dir"])[:-1]
     data = data[
         ["file", "pacmanPos", "ghost1Pos", "ghost2Pos", "ifscared1", "ifscared2", "beans", "energizers", "Reward",
-         "pacman_dir", "last_dir"]]
+         "pacman_dir", "last_dir", "strategy","strategy_utility"]]
 
-    data.to_pickle("../Data/process/10trial_gameStatus.pkl")
+    data.to_pickle("../Data/process/single_gameStatus.pkl")
 
 
 if __name__ == '__main__':

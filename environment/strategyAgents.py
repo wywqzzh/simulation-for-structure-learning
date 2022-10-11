@@ -181,7 +181,8 @@ class singleStartegyAgents(StartegyAgents):
         move = dir_dict[choice]
         # if strategy_name == "approach":
         #     print(Q)
-        return move, strategy_name
+        print(strategy_name,Q)
+        return move, strategy_name,Q
 
 
 class twoStartegyAgents(StartegyAgents):
@@ -221,4 +222,4 @@ class twoStartegyAgents(StartegyAgents):
         dir_dict = {"left": Directions.WEST, "right": Directions.EAST, "up": Directions.NORTH, "down": Directions.SOUTH
                     }
         move = dir_dict[choice]
-        return move, strategy_name
+        return move, strategy_name,Q

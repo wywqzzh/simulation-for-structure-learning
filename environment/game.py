@@ -635,6 +635,7 @@ class Game:
         reward_sequence = []
         dead_sequence = []
         strategy_sequence = []
+        strategy_utility_sequence = []
         #################################################
         for i in range(len(self.agents)):
             agent = self.agents[i]
@@ -765,9 +766,10 @@ class Game:
                     action = agent.getAction(observation)
                 #################################################
                 if agentIndex == 0:
-                    action, strategy_name = agent.getAction(observation)
+                    action, strategy_name, Q = agent.getAction(observation)
                     action_sequence.append(deepcopy(action))
                     strategy_sequence.append(strategy_name)
+                    strategy_utility_sequence.append(Q)
                 #################################################
             self.unmute()
 
@@ -819,4 +821,4 @@ class Game:
                     self.unmute()
                     return
         self.display.finish()
-        return state_sequence, action_sequence, reward_sequence, dead_sequence, strategy_sequence
+        return state_sequence, action_sequence, reward_sequence, dead_sequence, strategy_sequence, strategy_utility_sequence

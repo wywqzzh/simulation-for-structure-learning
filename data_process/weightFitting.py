@@ -11,15 +11,15 @@ from sklearn.model_selection import KFold
 from sklearn.neural_network import MLPClassifier
 
 import sys
+import warnings
 
+warnings.filterwarnings('ignore')
 sys.path.append("../Utils")
 from Utils.FileUtils import readAdjacentMap
 
 agents = [
     "global",
     "local",
-    "evade_blinky",
-    "evade_clyde",
     "approach",
     "energizer",
 ]
@@ -34,7 +34,7 @@ class weightFitter:
         self.filename = filename
         self.all_dir_list = ["left", "right", "up", "down"]
         self.adjacent_data = readAdjacentMap("../Data/mapMsg/adjacent_map_" + map_name + ".csv")
-        self.adjacent_data = readAdjacentMap("../Data/constant/adjacent_map.csv")
+        # self.adjacent_data = readAdjacentMap("../Data/constant/adjacent_map.csv")
         self._readData()
 
     def _normalizeWithInf(self, x):
@@ -51,10 +51,6 @@ class weightFitter:
         Make evade agent Q values non-negative.
         '''
         non_zero = []
-        if pos == (29, 18) or pos == (30, 18):
-            pos = (28, 18)
-        if pos == (0, 18) or pos == (-1, 18):
-            pos = (1, 18)
         for dir in self.all_dir_list:
             if None != self.adjacent_data[pos][dir] and not isinstance(self.adjacent_data[pos][dir], float):
                 non_zero.append(self.all_dir_list.index(dir))
@@ -106,8 +102,8 @@ class weightFitter:
         '''
         eat_ghost = (
             (
-                    ((df_monkey.ifscared1 == 3) & (df_monkey.ifscared1.diff() < 0))
-                    | ((df_monkey.ifscared2 == 3) & (df_monkey.ifscared2.diff() < 0))
+                    ((df_monkey.ifscared1 == 1) & (df_monkey.ifscared1.diff() < 0))
+                    | ((df_monkey.ifscared2 == 1) & (df_monkey.ifscared2.diff() < 0))
             )
                 .where(lambda x: x == True)
                 .dropna()
@@ -258,14 +254,14 @@ class weightFitter:
         pass
 
     def fit_func(self, df_monkey, cutoff_pts, suffix="_Q", is_match=False,
-                 agents=["global", "local", "evade_blinky", "evade_clyde", "approach", "energizer"]):
+                 agents=["global", "local", "approach", "energizer"]):
         '''
         Fit model parameters (i.e., agent weights).
         '''
         result_list = []
         is_correct = []
-        bounds = [[0, 1000], [0, 1000], [0, 1000], [0, 1000], [0, 1000], [0, 1000]]
-        params = [0.0] * 6
+        bounds = [[0, 1000], [0, 1000], [0, 1000], [0, 1000]]
+        params = [0.0] * 4
         cons = []  # construct the bounds in the form of constraints
 
         for par in range(len(bounds)):
@@ -303,7 +299,7 @@ class weightFitter:
             )
             if set(res.x) == {0}:
                 print("Failed optimization at ({},{})".format(prev, end))
-                params = [0.1] * 6
+                params = [0.1] * 4
                 for i, a in enumerate(agents):
                     if set(np.concatenate(all_data["{}{}".format(a, suffix)].values)) == {0}:
                         params[i] = 0.0
@@ -340,8 +336,6 @@ class weightFitter:
         agents = [
             "global",
             "local",
-            "pessimistic_blinky",
-            "pessimistic_clyde",
             "suicide",
             "planned_hunting",
         ]
@@ -359,9 +353,168 @@ class weightFitter:
         )
         return df_plot, df_result
 
+    def negativeLikelihoodMergeGroup(self,
+                                     param, all_data, true_prob, group_idx, agents_list, return_trajectory=False,
+                                     suffix="_Q"
+                                     ):
+        """
+        Compute the negative log-likelihood.
+        :param param: (list) Model parameters, which are agent weights.
+        :param all_data: (pandas.DataFrame) A table of data.
+        :param agent_list: (list) Names of all the agents.
+        :param return_trajectory: (bool) Set to True when making predictions.
+        :return: (float) Negative log-likelihood
+        """
+        if 0 == len(agents_list) or None == agents_list:
+            raise ValueError("Undefined agents list!")
+        else:
+            agent_weight = [param[i] for i in range(len(param))]
+        # Compute negative log likelihood
+        nll = 0
+        num_samples = all_data.shape[0]
+        agents_list = [("{}" + suffix).format(each) for each in agents_list]
+        pre_estimation = all_data[agents_list].values
+        # raise KeyboardInterrupt
+        agent_Q_value = np.zeros((num_samples, 4, len(agents_list)))
+        for each_sample in range(num_samples):
+            for each_agent in range(len(agents_list)):
+                agent_Q_value[each_sample, :, each_agent] = pre_estimation[each_sample][
+                    each_agent
+                ]
+        # merge Q values
+        merg_Q_values = np.zeros((agent_Q_value.shape[0], agent_Q_value.shape[1], len(group_idx)))
+        for i, g in enumerate(group_idx):
+            merg_Q_values[:, :, i] = np.nanmean(agent_Q_value[:, :, g], axis=-1)
+        dir_Q_value = merg_Q_values @ agent_weight
+        dir_Q_value[np.isnan(dir_Q_value)] = -np.inf
+        true_dir = true_prob.apply(lambda x: self._makeChoice(x)).values
+        exp_prob = np.exp(dir_Q_value)
+        for each_sample in range(num_samples):
+            if np.isnan(dir_Q_value[each_sample][0]):
+                continue
+            log_likelihood = dir_Q_value[each_sample, true_dir[each_sample]] - np.log(np.sum(exp_prob[each_sample]))
+            nll = nll - log_likelihood
+        if not return_trajectory:
+            return nll
+        else:
+            return (nll, dir_Q_value)
+
+    def merge_fit_func(self, df_monkey, cutoff_pts, suffix="_Q", is_match=False,
+                       agents=["global", "local", "approach", "energizer"]):
+        '''
+        Fit model parameters (i.e., agent weights).
+        '''
+        agent_Q_list = [each + suffix for each in agents]
+
+        result_list = []
+        is_correct = []
+
+        prev = 0
+        total_loss = 0
+        is_correct = np.zeros((df_monkey.shape[0],))
+        is_correct[is_correct == 0] = np.nan
+        trial_same_dir_groups = []
+        for prev, end in cutoff_pts:
+            all_data = df_monkey[prev:end]
+            temp_data = copy.deepcopy(all_data)
+            temp_data["nan_dir"] = temp_data.next_pacman_dir_fill.apply(lambda x: isinstance(x, float))
+            all_data = all_data[temp_data.nan_dir == False]
+            if all_data.shape[0] == 0:
+                print("All the directions are nan from {} to {}!".format(prev, end))
+                continue
+            # -----
+            agent_dirs = []
+            agent_Q_data = all_data[agent_Q_list]
+            for each in agent_Q_list:
+                agent_Q_data[each] = agent_Q_data[each].apply(lambda x: np.nan if isinstance(x, list) else x).fillna(
+                    method="ffill").fillna(
+                    method="bfill").values
+                tmp_dirs = agent_Q_data[each].apply(
+                    lambda x: np.argmax(x) if not np.all(x[~np.isinf(x)] == 0) else np.nan).values
+                agent_dirs.append(tmp_dirs)
+            agent_dirs = np.asarray(agent_dirs)
+            # -----
+            # Split into groups
+            wo_nan_idx = np.asarray([i for i in range(agent_dirs.shape[0]) if not np.any(np.isnan(agent_dirs[i]))])
+            if len(wo_nan_idx) <= 1:
+                same_dir_groups = [[i] for i in range(len(agents))]
+            else:
+                same_dir_groups = [[i] for i in range(len(agents)) if i not in wo_nan_idx]
+                wo_nan_is_same = np.asarray(
+                    [[np.all(agent_dirs[i] == agent_dirs[j]) for j in wo_nan_idx] for i in wo_nan_idx], dtype=int)
+                _, component_labels = connected_components(wo_nan_is_same, directed=False)
+                for i in np.unique(component_labels):
+                    same_dir_groups.append(list(wo_nan_idx[np.where(component_labels == i)[0]]))
+            trial_same_dir_groups.append(same_dir_groups)
+            # construct reverse table
+            reverse_group_idx = {each: [None, 0] for each in range(4)}
+            for g_idx, g in enumerate(same_dir_groups):
+                for i in g:
+                    reverse_group_idx[i][0] = g_idx
+                    for j in g:
+                        reverse_group_idx[j][1] += 1
+            # -----
+            ind = np.where(temp_data.nan_dir == False)[0] + prev
+            true_prob = all_data.next_pacman_dir_fill.fillna(method="ffill").apply(self._oneHot)
+            # -----
+            bounds = [[0, 1000] for _ in range(len(same_dir_groups))]
+            params = [0.0] * len(same_dir_groups)
+            cons = []  # construct the bounds in the form of constraints
+            for par in range(len(bounds)):
+                l = {"type": "ineq", "fun": lambda x: x[par] - bounds[par][0]}
+                u = {"type": "ineq", "fun": lambda x: bounds[par][1] - x[par]}
+                cons.append(l)
+                cons.append(u)
+            func = lambda params: self.negativeLikelihoodMergeGroup(
+                params, all_data, true_prob, same_dir_groups, agents, return_trajectory=False, suffix=suffix
+            )
+            res = scipy.optimize.minimize(
+                func,
+                x0=params,
+                method="SLSQP",
+                bounds=bounds,  # exclude bounds and cons because the Q-value has different scales for different agents
+                tol=1e-5,
+                constraints=cons,
+            )
+            if set(res.x) == {0}:
+                print("Failed optimization at ({},{})".format(prev, end))
+                params = [0.1] * len(same_dir_groups)
+                for i, a in enumerate(agents):
+                    if set(np.concatenate(all_data["{}{}".format(a, suffix)].values)) == {0}:
+                        params[i] = 0.0
+                res = scipy.optimize.minimize(
+                    func,
+                    x0=params,
+                    method="SLSQP",
+                    bounds=bounds,
+                    # exclude bounds and cons because the Q-value has different scales for different agents
+                    tol=1e-5,
+                    constraints=cons,
+                )
+            total_loss += self.negativeLikelihoodMergeGroup(
+                res.x / res.x.sum(),
+                all_data,
+                true_prob,
+                same_dir_groups,
+                agents,
+                return_trajectory=False,
+                suffix=suffix,
+            )
+            # -----
+            reassigned_weights = [res.x[reverse_group_idx[i][0]] / reverse_group_idx[i][1] for i in range(4)]
+            cr = self.caculate_correct_rate(reassigned_weights, all_data, true_prob, agents, suffix=suffix)
+            result_list.append(reassigned_weights + [cr] + [prev] + [end])
+            phase_is_correct = self._calculate_is_correct(reassigned_weights, all_data, true_prob, agents,
+                                                          suffix=suffix)
+            is_correct[ind] = phase_is_correct
+        if is_match:
+            return result_list, total_loss, is_correct, trial_same_dir_groups
+        else:
+            return result_list, total_loss
+
     def dynamicStrategyFitting(self):
         print("=== Dynamic Strategy Fitting ====")
-        self.suffix = "_Q_norm"
+        self.suffix = "_Q"
         trial_name_list = np.unique(self.df.file.values)
         print("The num of trials : ", len(trial_name_list))
         print("-" * 50)
@@ -385,6 +538,43 @@ class weightFitter:
             except:
                 print("Error occurs in weight normalization.")
                 continue
+            # signal = df_plot.filter(regex="_w").fillna(0).values
+            # algo = rpt.Dynp(model="l2", jump=2).fit(signal)
+            # nll_list = []
+            # bkpt_list = list(range(2, 31))
+            # this_bkpt_list = []
+            # bkpt_idx_list = []
+            # for index, n_bkpt in enumerate(bkpt_list):
+            #     try:
+            #         result = algo.predict(n_bkpt)
+            #         result = list(zip([0] + result[:-1], result))
+            #         result = self._combine(result, df.next_pacman_dir_fill)
+            #         result_list, total_loss = self.merge_fit_func(df, result, suffix=self.suffix, agents=agents)
+            #         print(
+            #             "| {} |".format(n_bkpt), 'total loss:', total_loss, 'penalty:', 0.5 * n_bkpt * 5, 'AIC:',
+            #                                                                             total_loss + 0.5 * n_bkpt * 5,
+            #         )
+            #         nll_list.append(total_loss)
+            #         this_bkpt_list.append(n_bkpt)
+            #         bkpt_idx_list.append(result)
+            #         # not_same_list.append(trial_not_same_trial)
+            #     except:
+            #         print("No admissible last breakpoints found.")
+            #         break
+            #
+            # if len(nll_list) == 0:
+            #     continue
+            # best_arg = np.argmin(nll_list)
+            # best_num_of_bkpt = this_bkpt_list[best_arg]
+            # best_log = nll_list[best_arg]
+            # best_bkpt_idx = bkpt_idx_list[best_arg]
+            # # best_not_same_list = not_same_list[best_arg]
+            # print("Least Log Likelihood value : {}, Best # of breakpoints {}".format(best_log, best_num_of_bkpt))
+            # # =============use best # of breakpoints to get weights and accuracy================
+            # result_list, total_loss, is_correct, trial_same_dir_groups = self.merge_fit_func(df, best_bkpt_idx,
+            #                                                                                  suffix=self.suffix,
+            #                                                                                  is_match=True,
+            #                                                                                  agents=agents)
 
             trial_weight = []
             trial_contribution = []
@@ -407,10 +597,12 @@ class weightFitter:
                 pass
             data.append(df)
         data = pd.concat(data).reset_index(drop=True)
-        x = 0
+        with open("../Data/process/10_weight__.pkl", "wb") as file:
+            pickle.dump(data, file)
 
 
 if __name__ == '__main__':
     filename = "../Data/10_trial_data_Omega.pkl"
+    filename = "../Data/process/10_Q.pkl"
     weight_fitter = weightFitter(filename)
     weight_fitter.dynamicStrategyFitting()

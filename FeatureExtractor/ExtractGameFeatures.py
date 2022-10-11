@@ -1,13 +1,13 @@
 import pandas as pd
 import numpy as np
 import sys
-from environment import layout
+
 from copy import deepcopy
 
-sys.path.append("../../Utils/")
+sys.path.append("../Utils/")
 sys.path.append("../environment")
 from Utils.FileUtils import readAdjacentMap, readLocDistance, readAdjacentPath
-
+from environment import layout
 inf_val = 50  # 空数据的默认值（e.g., 地图中不存在水果时，Pacman和水果的距离就设置为50）
 
 
@@ -92,7 +92,7 @@ class featureExtractor:
         else:
             raise ValueError("Undefined direction {}!".format(type))
         ghostPos = (int(ghostPos[0]), int(ghostPos[1]))
-        # print(ghostPos, pacmanPos)
+        print(ghostPos, pacmanPos)
         return 0 if adjacent == ghostPos else locs_df[adjacent][ghostPos]
 
     def extractBehaviorFeature(self, trial):
@@ -307,10 +307,6 @@ class featureExtractor:
         # ghost features
         df["PG1"] = df[["PG1_{}".format(d) for d in dir_list]].apply(lambda x: x.min(), axis=1)
         df["PG2"] = df[["PG2_{}".format(d) for d in dir_list]].apply(lambda x: x.min(), axis=1)
-        if np.array(df["ifscared1"] == 1)[0]:
-            x = 0
-        if np.array(df["ifscared2"] == 1)[0]:
-            x = 0
         df.loc[df.ifscared1 == 1, "PG1"] = inf_val
         df.loc[df.ifscared2 == 1, "PG2"] = inf_val
         df["if_normal1"] = (df.ifscared1 <= 0).astype(int)

@@ -127,10 +127,15 @@ def estimateUnitility(filename):
     data["global_Q"] = global_Q
     data["energizer_Q"] = energizer_Q
     data["approach_Q"] = approach_Q
-    data.to_pickle("../Data/process/10trial_Q.pkl")
+    data.to_pickle("../Data/process/10_Q.pkl")
     pass
 
 
 if __name__ == '__main__':
-    filepath = "../Data/process/10trial_gameStatus.pkl"
+    filepath = "../Data/process/10_gameStatus.pkl"
     estimateUnitility(filepath)
+
+    # data=pd.read_pickle("../Data/process/10trial_Q.pkl")
+    # temp_data=pd.read_pickle("../Data/process/10trial_gameStatus.pkl")
+    # data["strategy"]=temp_data["strategy"]
+    # data.to_pickle("../Data/process/10trial_Q.pkl")
