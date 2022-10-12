@@ -752,8 +752,8 @@ def runGames(trial, layout, horizon, pacman, ghosts, display, numGames, record, 
         if beQuiet:
             # Suppress output and graphics
 
-            gameDisplay = textDisplay.NullGraphics()
-            # gameDisplay = display
+            # gameDisplay = textDisplay.NullGraphics()
+            gameDisplay = display
             rules.quiet = True
         else:
             gameDisplay = display

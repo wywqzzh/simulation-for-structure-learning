@@ -199,23 +199,35 @@ class twoStartegyAgents(StartegyAgents):
         legal = state.getLegalActions(self.index)
         if 'Stop' in legal:
             legal.remove('Stop')
-
+        
         game_status, feature = self.state_to_feature(state)
         # feature={'PG1': 1, 'GS1': 0, 'PG2': 2, 'GS2': 0, 'PE': 1, 'BW': 0, 'BB': 1, 'ZBW': 1, 'ZBB': 0}
         # choose strategy
-        two_strategy_name = self.strategy_choice.get_two_strategy(feature)
-        strategy_name = self.strategy_choice.get_single_strategy(feature)
-        if self.strategy_choice.two_strategy_end == True:
-            self.strategy_choice.two_strategy = two_strategy_name
-            self.strategy_choice.two_strategy_end = False
-            self.strategy_choice.strategy = None
+        is_evade = self.strategy_choice.is_evade(feature)
+        if is_evade:
+            strategy_name = "evade"
+            print("evade")
+        else:
+            two_strategy_name = self.strategy_choice.get_two_strategy(feature)
             strategy_name = self.strategy_choice.get_single_strategy(feature)
-            if two_strategy_name == "EA" and strategy_name == None:
-                print("feature:", feature)
+            if self.strategy_choice.two_strategy_end == True:
+                self.strategy_choice.two_strategy = two_strategy_name
+                self.strategy_choice.two_strategy_end = False
+                self.strategy_choice.strategy = None
                 strategy_name = self.strategy_choice.get_single_strategy(feature)
-            if two_strategy_name == "eC" and strategy_name == None:
+                if two_strategy_name == "EA" and strategy_name == "approach":
+                    x = 0
+                if two_strategy_name == "GL" and strategy_name == "local":
+                    x = 0
+                if two_strategy_name == "LG" and strategy_name == "global":
+                    x = 0
+                two_strategy_name = self.strategy_choice.get_two_strategy(feature)
+                self.strategy_choice.two_strategy = two_strategy_name
+                self.strategy_choice.two_strategy_end = False
+                self.strategy_choice.strategy = None
                 strategy_name = self.strategy_choice.get_single_strategy(feature)
-        # print(self.strategy_choice.two_strategy, strategy_name)
+                print("---:", self.strategy_choice.two_strategy, strategy_name)
+            print(self.strategy_choice.two_strategy, strategy_name)
         strategy = self.startegies[strategy_name]
         strategy.set_state(game_status)
         _, Q = strategy.nextDir(return_Q=True)

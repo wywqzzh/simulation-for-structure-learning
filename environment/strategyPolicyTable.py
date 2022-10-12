@@ -128,16 +128,26 @@ class twoStrategyPolicyTable:
                         self.EA_table.update({str(i) + str(k) + str(m): 1})
                     else:
                         self.EA_table.update({str(i) + str(k) + str(m): 0.5})
+        self.evading = False
+
+    def is_evade(self, state):
+        evade_state = str(state["PG1"]) + str(state["GS1"]) + str(state["PG2"]) + str(state["GS2"])
+        prob_evade = self.evade_table[evade_state]
+        if prob_evade > 0.5:
+            self.evading = True
+            return True
+        else:
+            return False
 
     def get_two_strategy(self, state):
         LG_state = str(state["ZBW"])
         GL_state = str(state["ZBW"]) + str(state["ZBB"])
-        evade_state = str(state["PG1"]) + str(state["GS1"]) + str(state["PG2"]) + str(state["GS2"])
+
         EA_state = str(state["PG1"]) + str(state["PG2"]) + str(state["PE"])
 
         prob_LG = self.LG_table[LG_state]
         prob_GL = self.GL_table[GL_state]
-        # prob_eC = self.eC_table[ec_state]
+
         prob_EA = self.EA_table[EA_state]
 
         stragetegy_name = ["LG", "GL", "EA"]
