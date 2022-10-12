@@ -512,6 +512,11 @@ class weightFitter:
         else:
             return result_list, total_loss
 
+    def get_cutoff_pts(self, x):
+        temp = list(np.where((x == x.shift()) == False)[0])[1:]
+        temp.append(len(x))
+        return temp
+
     def dynamicStrategyFitting(self):
         print("=== Dynamic Strategy Fitting ====")
         self.suffix = "_Q"
@@ -524,14 +529,15 @@ class weightFitter:
         for t, trial_name in enumerate(trial_name_list):
             df = self.df[self.df.file == trial_name].reset_index()
             print("| ({}) {} | Data shape {}".format(t, trial_name, df.shape))
-            cutoff_pts = self.add_cutoff_pts(self.change_dir_index(df.next_pacman_dir_fill),
-                                             df)
-            if cutoff_pts[-1] != len(df) - 1:
-                cutoff_pts.append(len(df))
-            else:
-                cutoff_pts[-1] = len(df)
+            cutoff_pts = self.get_cutoff_pts(df["strategy"])
+            # cutoff_pts = self.add_cutoff_pts(self.change_dir_index(df.next_pacman_dir_fill),
+            #                                  df)
+            # if cutoff_pts[-1] != len(df) - 1:
+            #     cutoff_pts.append(len(df))
+            # else:
+            #     cutoff_pts[-1] = len(df)
             cutoff_pts = list(zip([0] + list(cutoff_pts[:-1]), cutoff_pts))
-            cutoff_pts = self._combine(cutoff_pts, df.next_pacman_dir_fill)
+            # cutoff_pts = self._combine(cutoff_pts, df.next_pacman_dir_fill)
             result_list, _, is_correct = self.fit_func(df, cutoff_pts, suffix=self.suffix, agents=agents, is_match=True)
             try:
                 df_plot, df_result = self.normalize_weights(result_list, df)
@@ -597,12 +603,12 @@ class weightFitter:
                 pass
             data.append(df)
         data = pd.concat(data).reset_index(drop=True)
-        with open("../Data/process/10_weight__.pkl", "wb") as file:
+        with open("../Data/process/0_weight__.pkl", "wb") as file:
             pickle.dump(data, file)
 
 
 if __name__ == '__main__':
     filename = "../Data/10_trial_data_Omega.pkl"
-    filename = "../Data/process/10_Q.pkl"
+    filename = "../Data/process/0_Q.pkl"
     weight_fitter = weightFitter(filename)
     weight_fitter.dynamicStrategyFitting()

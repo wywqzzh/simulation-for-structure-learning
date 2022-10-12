@@ -23,15 +23,15 @@ class strategyPolicyTable:
                 else:
                     self.global_table.update({str(i) + str(j): 0.5})
 
-        # self.evade_table = {}
-        # for i in range(self.state_num["PG1"]):
-        #     for j in range(self.state_num["GS1"]):
-        #         for k in range(self.state_num["PG2"]):
-        #             for l in range(self.state_num["GS2"]):
-        #                 if (j == 0 and i == 0) or (k == 0 and l == 0):
-        #                     self.evade_table.update({str(i) + str(j) + str(k) + str(l): 1})
-        #                 else:
-        #                     self.evade_table.update({str(i) + str(j) + str(k) + str(l): 0.5})
+        self.evade_table = {}
+        for i in range(self.state_num["PG1"]):
+            for j in range(self.state_num["GS1"]):
+                for k in range(self.state_num["PG2"]):
+                    for l in range(self.state_num["GS2"]):
+                        if (j == 0 and i == 0) or (k == 0 and l == 0):
+                            self.evade_table.update({str(i) + str(j) + str(k) + str(l): 1})
+                        else:
+                            self.evade_table.update({str(i) + str(j) + str(k) + str(l): 0.5})
 
         self.energizer_table = {}
         for i in range(self.state_num["PE"]):
@@ -53,27 +53,29 @@ class strategyPolicyTable:
     def get_strategy(self, state):
         local_state = str(state["ZBW"])
         global_state = str(state["ZBW"]) + str(state["ZBB"])
-        # evade_state = str(state["PG1"]) + str(state["GS1"]) + str(state["PG2"]) + str(state["GS2"])
+        evade_state = str(state["PG1"]) + str(state["GS1"]) + str(state["PG2"]) + str(state["GS2"])
         energizer_state = str(state["PE"])
         approach_state = str(state["PG1"]) + str(state["GS1"]) + str(state["PG2"]) + str(state["GS2"])
 
         prob_local = self.local_table[local_state]
         prob_global = self.global_table[global_state]
-        # prob_evade = self.evade_table[evade_state]
+        prob_evade = self.evade_table[evade_state]
         prob_energizer = self.energizer_table[energizer_state]
         prob_approach = self.approach_table[approach_state]
 
-        stragetegy_name = ["local", "global", "energizer", "approach"]
-        prob = np.array([prob_local, prob_global, prob_energizer, prob_approach])
+        stragetegy_name = ["local", "global", "evade", "energizer", "approach"]
+        prob = np.array([prob_local, prob_global, prob_evade, prob_energizer, prob_approach])
         index = np.where(prob == np.max(prob))[0]
 
         stragetegy = np.array(stragetegy_name)[index]
-        if "approach" in stragetegy:
+        if "evade" in stragetegy:
+            return "evade"
+        elif "approach" in stragetegy:
             return "approach"
-        elif "local" in stragetegy:
-            return "local"
         elif "energizer" in stragetegy:
             return "energizer"
+        elif "local" in stragetegy:
+            return "local"
         elif "global" in stragetegy:
             return "global"
 
@@ -131,7 +133,7 @@ class twoStrategyPolicyTable:
         LG_state = str(state["ZBW"])
         GL_state = str(state["ZBW"]) + str(state["ZBB"])
         # ec_state = str(state["PG1"]) + str(state["GS1"]) + str(state["PG2"]) + str(state["GS2"])
-        EA_state = str(state["PG1"])  + str(state["PG2"])  + str(state["PE"])
+        EA_state = str(state["PG1"]) + str(state["PG2"]) + str(state["PE"])
 
         prob_LG = self.LG_table[LG_state]
         prob_GL = self.GL_table[GL_state]

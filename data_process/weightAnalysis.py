@@ -17,7 +17,7 @@ def predict_strategy(weight):
                 temp.append("approach")
             elif i == 3:
                 temp.append("energizer")
-    return temp[0]
+    return temp
 
 
 def strategy_equal_prediction(x, y):
@@ -39,6 +39,11 @@ for i, s in enumerate(strategy):
 
 temp = np.array([temp, data["strategy_utility"]])
 data["predict_strategy"] = data["weight"].apply(lambda x: predict_strategy(x))
+# index = np.where((data["strategy"] == "global") == True)[0]
+# temp_data = data[["strategy", "predict_strategy", "index"]].iloc[index]
+# index = np.where((temp_data["predict_strategy"] == "local") == True)[0]
+# index=temp_data["index"].iloc[index]
+# temp_data = data.iloc[index]
 temp = data[["strategy", "predict_strategy"]]
 data["equal"] = temp.apply(
     lambda x: strategy_equal_prediction(x.strategy, x.predict_strategy), axis=1)
@@ -54,11 +59,20 @@ strategy_num = {
 }
 for i in range(len(data)):
     true_strategy = data["strategy"][i]
-    predict_strategy = data["predict_strategy"][i]
+    predicted_strategy = data["predict_strategy"][i]
+    flag = True
+    for p in predicted_strategy:
+        x = strategy_num[p]
+        if x == strategy_num[true_strategy]:
+            accuracy[strategy_num[true_strategy]][x] += 1
+            flag = False
+            break
+    if flag == True:
+        accuracy[strategy_num[true_strategy]][strategy_num[predicted_strategy[0]]] += 1
+
     # print(strategy_num[true_strategy])
     # print(strategy_num[predict_strategy])
-    accuracy[strategy_num[true_strategy]][strategy_num[predict_strategy]] += 1
 
 for i in range(len(accuracy)):
-    accuracy[i]=accuracy[i]/np.sum(accuracy[i])
+    accuracy[i] = accuracy[i] / np.sum(accuracy[i])
 print(accuracy)

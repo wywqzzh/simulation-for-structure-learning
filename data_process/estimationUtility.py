@@ -132,7 +132,7 @@ def estimateUnitility(filename):
 
 
 if __name__ == '__main__':
-    filepath = "../Data/process/10_gameStatus.pkl"
+    filepath = "../Data/process/two_gameStatus.pkl"
     estimateUnitility(filepath)
 
     # data=pd.read_pickle("../Data/process/10trial_Q.pkl")

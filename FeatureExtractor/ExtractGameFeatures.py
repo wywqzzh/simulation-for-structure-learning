@@ -92,7 +92,7 @@ class featureExtractor:
         else:
             raise ValueError("Undefined direction {}!".format(type))
         ghostPos = (int(ghostPos[0]), int(ghostPos[1]))
-        print(ghostPos, pacmanPos)
+        # print(ghostPos, pacmanPos)
         return 0 if adjacent == ghostPos else locs_df[adjacent][ghostPos]
 
     def extractBehaviorFeature(self, trial):

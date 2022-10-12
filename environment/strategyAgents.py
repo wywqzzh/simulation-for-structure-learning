@@ -23,7 +23,7 @@ def get_args():
     parser.add_argument('--ghost_attractive_thr', type=int, default=34, help='Ghost attractive threshold.')
     parser.add_argument('--ghost_repulsive_thr', type=int, default=34, help='Ghost repulsive threshold.')
     parser.add_argument('--reward_coeff', type=float, default=1.0, help='Coefficient for the reward.')
-    parser.add_argument('--risk_coeff', type=float, default=1.0, help='Coefficient for the risk.')
+    parser.add_argument('--risk_coeff', type=float, default=0.0, help='Coefficient for the risk.')
     parser.add_argument('--randomness_coeff', type=float, default=0.0, help='Coefficient for the randomness.')
     parser.add_argument('--laziness_coeff', type=float, default=0.0, help='Coefficient for the laziness.')
     config = parser.parse_args(args=[])
@@ -40,6 +40,8 @@ def get_paramater_of_strategy(strategy_name, h, w):
         args.ignore_depth = 0
     elif strategy_name == "evade":
         args.depth = 3
+        args.risk_coeff = 1
+        args.reward_coeff = 0
     elif strategy_name == "energizer":
         args.depth = 10
     elif strategy_name == "approach":
@@ -182,7 +184,7 @@ class singleStartegyAgents(StartegyAgents):
         # if strategy_name == "approach":
         #     print(Q)
         print(strategy_name,Q)
-        return move, strategy_name,Q
+        return move, strategy_name, Q
 
 
 class twoStartegyAgents(StartegyAgents):
@@ -222,4 +224,4 @@ class twoStartegyAgents(StartegyAgents):
         dir_dict = {"left": Directions.WEST, "right": Directions.EAST, "up": Directions.NORTH, "down": Directions.SOUTH
                     }
         move = dir_dict[choice]
-        return move, strategy_name,Q
+        return move, strategy_name, Q

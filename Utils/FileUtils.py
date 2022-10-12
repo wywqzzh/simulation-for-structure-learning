@@ -118,7 +118,7 @@ def readRewardAmount():
         "bean": 2,  # bean
         "energizer": 4,  # energizer (default as 4)
         "ghost": 8,  # ghost
-        "eaten": 20  # eaten by ghost
+        "eaten": 8  # eaten by ghost
     }
     return reward_amount
 

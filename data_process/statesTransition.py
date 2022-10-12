@@ -85,7 +85,7 @@ def direction_transition(x):
 
 
 def transition():
-    num = 10
+    num = 20
     state = []
     action = []
     reward = []
@@ -94,7 +94,7 @@ def transition():
     strategy_utility = []
     files = []
     number = 1
-    for i in range(0, num):
+    for i in range(10, num):
         with open("../Data/game_status/" + str(i) + ".pkl", "rb") as file:
             data = pickle.load(file)
             for j in range(len(data["states"])):
@@ -146,7 +146,7 @@ def transition():
         ["file", "pacmanPos", "ghost1Pos", "ghost2Pos", "ifscared1", "ifscared2", "beans", "energizers", "Reward",
          "pacman_dir", "last_dir", "strategy","strategy_utility"]]
 
-    data.to_pickle("../Data/process/single_gameStatus.pkl")
+    data.to_pickle("../Data/process/two_gameStatus.pkl")
 
 
 if __name__ == '__main__':

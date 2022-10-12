@@ -123,11 +123,13 @@ class Strategy:
         # TODO: 改变ghost的状态
         if ifscared1 == 0 and cur_position == self.gameStatus["ghost_data"][0]:
             self.is_eaten = True
-            exact_risk = -self.mapStatus["reward_amount"]["eaten"]
+            if self.strategy_type == "evade":
+                exact_risk = -self.mapStatus["reward_amount"]["eaten"]
             # print("eaten by 1:", exact_risk)
         if ifscared2 == 0 and cur_position == self.gameStatus["ghost_data"][1]:
             self.is_eaten = True
-            exact_risk = -self.mapStatus["reward_amount"]["eaten"]
+            if self.strategy_type == "evade":
+                exact_risk = -self.mapStatus["reward_amount"]["eaten"]
             # print("eaten by 2:", exact_risk)
         return exact_risk
 
