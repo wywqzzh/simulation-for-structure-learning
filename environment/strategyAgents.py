@@ -183,7 +183,7 @@ class singleStartegyAgents(StartegyAgents):
         move = dir_dict[choice]
         # if strategy_name == "approach":
         #     print(Q)
-        print(strategy_name,Q)
+        # print(strategy_name,Q)
         return move, strategy_name, Q
 
 
