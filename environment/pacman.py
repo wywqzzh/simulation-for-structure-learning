@@ -584,7 +584,7 @@ def readCommand(argv):
     parser.add_option('--timeout', dest='timeout', type='int',
                       help=default('Maximum length of time an agent can spend computing in a single game'), default=30)
     parser.add_option('--sn', dest='startNum', type='int',
-                      help=default('start num of file'), default=10)
+                      help=default('start num of file'), default=0)
 
     options, otherjunk = parser.parse_args(argv)
 
@@ -753,7 +753,7 @@ def runGames(trial, layout, horizon, pacman, ghosts, display, numGames, record, 
             # Suppress output and graphics
 
             gameDisplay = textDisplay.NullGraphics()
-            gameDisplay = display
+            # gameDisplay = display
             rules.quiet = True
         else:
             gameDisplay = display

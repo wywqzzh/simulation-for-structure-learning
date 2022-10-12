@@ -110,15 +110,15 @@ class twoStrategyPolicyTable:
                 else:
                     self.GL_table.update({str(i) + str(j): 0.5})
 
-        # self.eC_table = {}
-        # for i in range(self.state_num["PG1"]):
-        #     for j in range(self.state_num["GS1"]):
-        #         for k in range(self.state_num["PG2"]):
-        #             for l in range(self.state_num["GS2"]):
-        #                 if (j == 0 and i == 0) or (k == 0 and l == 0):
-        #                     self.eC_table.update({str(i) + str(j) + str(k) + str(l): 1})
-        #                 else:
-        #                     self.eC_table.update({str(i) + str(j) + str(k) + str(l): 0.5})
+        self.evade_table = {}
+        for i in range(self.state_num["PG1"]):
+            for j in range(self.state_num["GS1"]):
+                for k in range(self.state_num["PG2"]):
+                    for l in range(self.state_num["GS2"]):
+                        if (j == 0 and i == 0) or (k == 0 and l == 0):
+                            self.evade_table.update({str(i) + str(j) + str(k) + str(l): 1})
+                        else:
+                            self.evade_table.update({str(i) + str(j) + str(k) + str(l): 0.5})
 
         self.EA_table = {}
         for i in range(self.state_num["PG1"]):
@@ -132,7 +132,7 @@ class twoStrategyPolicyTable:
     def get_two_strategy(self, state):
         LG_state = str(state["ZBW"])
         GL_state = str(state["ZBW"]) + str(state["ZBB"])
-        # ec_state = str(state["PG1"]) + str(state["GS1"]) + str(state["PG2"]) + str(state["GS2"])
+        evade_state = str(state["PG1"]) + str(state["GS1"]) + str(state["PG2"]) + str(state["GS2"])
         EA_state = str(state["PG1"]) + str(state["PG2"]) + str(state["PE"])
 
         prob_LG = self.LG_table[LG_state]

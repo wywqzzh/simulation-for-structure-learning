@@ -156,7 +156,7 @@ def getLayout(name, back=2):
 
 
 def tryToLoad(fullname):
-    x = os.path.realpath(__file__).split("\\")[:-1]
+    x = os.path.realpath(__file__).split("/")[:-1]
     fullname = "/".join(x)+"/"+fullname
     if (not os.path.exists(fullname)):
         return None
