@@ -165,12 +165,12 @@ class singleStartegyAgents(StartegyAgents):
         # choose strategy
         strategy_name = self.strategy_choice.get_strategy(feature)
         # strategy_name = "approach"
-        cur_pos = change_pos(state.data.agentStates[0].configuration.pos, self.layout_h)
-        if cur_pos in self.intersection_data or strategy_name == "evade" or self.last_strategy_name == "evade":
-            # print("change strategy,", cur_pos)
-            self.last_strategy_name = strategy_name
-        else:
-            strategy_name = self.last_strategy_name
+        # cur_pos = change_pos(state.data.agentStates[0].configuration.pos, self.layout_h)
+        # if cur_pos in self.intersection_data or strategy_name == "evade" or self.last_strategy_name == "evade":
+        #     # print("change strategy,", cur_pos)
+        #     self.last_strategy_name = strategy_name
+        # else:
+        #     strategy_name = self.last_strategy_name
         # print(strategy_name)
         strategy = self.startegies[strategy_name]
         # strategy = self.startegies["approach"]
