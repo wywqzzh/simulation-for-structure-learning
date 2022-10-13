@@ -20,6 +20,7 @@ from Utils.FileUtils import readAdjacentMap
 agents = [
     "global",
     "local",
+    "evade",
     "approach",
     "energizer",
 ]
@@ -30,8 +31,9 @@ class weightFitter:
     fitting the strategy weight
     """
 
-    def __init__(self, filename, map_name="originalClassic1"):
+    def __init__(self, filename, strategy_num=5, map_name="originalClassic1"):
         self.filename = filename
+        self.strategy_num = strategy_num
         self.all_dir_list = ["left", "right", "up", "down"]
         self.adjacent_data = readAdjacentMap("../Data/mapMsg/adjacent_map_" + map_name + ".csv")
         # self.adjacent_data = readAdjacentMap("../Data/constant/adjacent_map.csv")
@@ -105,9 +107,9 @@ class weightFitter:
                     ((df_monkey.ifscared1 == 1) & (df_monkey.ifscared1.diff() < 0))
                     | ((df_monkey.ifscared2 == 1) & (df_monkey.ifscared2.diff() < 0))
             )
-                .where(lambda x: x == True)
-                .dropna()
-                .index.tolist()
+            .where(lambda x: x == True)
+            .dropna()
+            .index.tolist()
         )
         eat_energizers = (
             (
@@ -116,9 +118,9 @@ class weightFitter:
                     ).diff()
                     < 0
             )
-                .where(lambda x: x == True)
-                .dropna()
-                .index.tolist()
+            .where(lambda x: x == True)
+            .dropna()
+            .index.tolist()
         )
         cutoff_pts = sorted(list(cutoff_pts) + eat_ghost + eat_energizers)
         return cutoff_pts
@@ -254,14 +256,14 @@ class weightFitter:
         pass
 
     def fit_func(self, df_monkey, cutoff_pts, suffix="_Q", is_match=False,
-                 agents=["global", "local", "approach", "energizer"]):
+                 agents=["global", "local", "evade", "approach", "energizer"]):
         '''
         Fit model parameters (i.e., agent weights).
         '''
         result_list = []
         is_correct = []
-        bounds = [[0, 1000], [0, 1000], [0, 1000], [0, 1000]]
-        params = [0.0] * 4
+        bounds = [[0, 1000]] * self.strategy_num
+        params = [0.0] * self.strategy_num
         cons = []  # construct the bounds in the form of constraints
 
         for par in range(len(bounds)):
@@ -299,7 +301,7 @@ class weightFitter:
             )
             if set(res.x) == {0}:
                 print("Failed optimization at ({},{})".format(prev, end))
-                params = [0.1] * 4
+                params = [0.1] * self.strategy_num
                 for i, a in enumerate(agents):
                     if set(np.concatenate(all_data["{}{}".format(a, suffix)].values)) == {0}:
                         params[i] = 0.0
@@ -344,9 +346,9 @@ class weightFitter:
                 result_list,
                 columns=[i + "_w" for i in agents] + ["accuracy", "start", "end"],
             )
-                .set_index("start")
-                .reindex(range(df_monkey.shape[0]))
-                .fillna(method="ffill")
+            .set_index("start")
+            .reindex(range(df_monkey.shape[0]))
+            .fillna(method="ffill")
         )
         df_plot = df_result.filter(regex="_w").divide(
             df_result.filter(regex="_w").sum(1), 0
@@ -447,7 +449,7 @@ class weightFitter:
                     same_dir_groups.append(list(wo_nan_idx[np.where(component_labels == i)[0]]))
             trial_same_dir_groups.append(same_dir_groups)
             # construct reverse table
-            reverse_group_idx = {each: [None, 0] for each in range(4)}
+            reverse_group_idx = {each: [None, 0] for each in range(self.strategy_num)}
             for g_idx, g in enumerate(same_dir_groups):
                 for i in g:
                     reverse_group_idx[i][0] = g_idx
@@ -501,7 +503,8 @@ class weightFitter:
                 suffix=suffix,
             )
             # -----
-            reassigned_weights = [res.x[reverse_group_idx[i][0]] / reverse_group_idx[i][1] for i in range(4)]
+            reassigned_weights = [res.x[reverse_group_idx[i][0]] / reverse_group_idx[i][1] for i in
+                                  range(self.strategy_num)]
             cr = self.caculate_correct_rate(reassigned_weights, all_data, true_prob, agents, suffix=suffix)
             result_list.append(reassigned_weights + [cr] + [prev] + [end])
             phase_is_correct = self._calculate_is_correct(reassigned_weights, all_data, true_prob, agents,
@@ -518,8 +521,9 @@ class weightFitter:
         return temp
 
     def dynamicStrategyFitting(self):
+        # self.df = self.df.iloc[394:436]
         print("=== Dynamic Strategy Fitting ====")
-        self.suffix = "_Q"
+        self.suffix = "_Q_norm"
         trial_name_list = np.unique(self.df.file.values)
         print("The num of trials : ", len(trial_name_list))
         print("-" * 50)
@@ -539,11 +543,11 @@ class weightFitter:
             cutoff_pts = list(zip([0] + list(cutoff_pts[:-1]), cutoff_pts))
             # cutoff_pts = self._combine(cutoff_pts, df.next_pacman_dir_fill)
             result_list, _, is_correct = self.fit_func(df, cutoff_pts, suffix=self.suffix, agents=agents, is_match=True)
-            try:
-                df_plot, df_result = self.normalize_weights(result_list, df)
-            except:
-                print("Error occurs in weight normalization.")
-                continue
+            # try:
+            #     df_plot, df_result = self.normalize_weights(result_list, df)
+            # except:
+            #     print("Error occurs in weight normalization.")
+            #     continue
             # signal = df_plot.filter(regex="_w").fillna(0).values
             # algo = rpt.Dynp(model="l2", jump=2).fit(signal)
             # nll_list = []
@@ -603,12 +607,12 @@ class weightFitter:
                 pass
             data.append(df)
         data = pd.concat(data).reset_index(drop=True)
-        with open("../Data/process/0_weight__.pkl", "wb") as file:
+        with open("../Data/process/two_1_weight_norm.pkl", "wb") as file:
             pickle.dump(data, file)
 
 
 if __name__ == '__main__':
     filename = "../Data/10_trial_data_Omega.pkl"
-    filename = "../Data/process/0_Q.pkl"
-    weight_fitter = weightFitter(filename)
+    filename = "../Data/process/two_1_Q.pkl"
+    weight_fitter = weightFitter(filename, 5)
     weight_fitter.dynamicStrategyFitting()

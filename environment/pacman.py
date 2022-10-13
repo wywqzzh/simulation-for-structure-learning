@@ -583,15 +583,15 @@ def readCommand(argv):
                       help='Turns on exception handling and timeouts during games', default=False)
     parser.add_option('--timeout', dest='timeout', type='int',
                       help=default('Maximum length of time an agent can spend computing in a single game'), default=30)
-    parser.add_option('--sn', dest='startNum', type='int',
-                      help=default('start num of file'), default=10)
+    parser.add_option('-b', dest='agentType', type='str',
+                      help=default('start num of file'), default="one")
 
     options, otherjunk = parser.parse_args(argv)
 
     if len(otherjunk) != 0:
         raise Exception('Command line input not understood: ' + str(otherjunk))
     args = dict()
-    args["startNum"] = options.startNum
+    args["agentType"] = options.agentType
     # Fix the random seed
     if options.fixRandomSeed:
         random.seed('cs188')
@@ -723,10 +723,11 @@ def replayGame(layout, actions, display):
 
 
 def runGames(trial, layout, horizon, pacman, ghosts, display, numGames, record, numTraining=0, catchExceptions=False,
-             timeout=30, startNum=0):
+             timeout=30, agentType="one", startNum=0):
     import __main__
     __main__.__dict__['_display'] = display
 
+    print(agentType, startNum)
     rules = ClassicGameRules(timeout)
     games = []
 
@@ -781,7 +782,7 @@ def runGames(trial, layout, horizon, pacman, ghosts, display, numGames, record, 
                 "strategy_utility_sequences": strategy_utility_sequences
             }
             import pickle
-            with open("../Data/game_status/" + str(file_num) + ".pkl", "wb") as file:
+            with open("../Data/game_status/" + agentType + "_" + str(file_num) + ".pkl", "wb") as file:
                 pickle.dump(result, file)
             file_num += 1
         #####################################

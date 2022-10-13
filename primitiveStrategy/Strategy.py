@@ -234,16 +234,17 @@ class Strategy:
 
         # Add potential reward/risk for every path
         for each in self.root.leaves:
-            if self.strategy_type == "global" or self.strategy_type == "approach":
-                each.path_utility = each.cumulative_utility / each.cur_len
-            elif self.strategy_type == "evade":
-                # 向能走的最远的方向躲避，避免进入死胡同
-                if each.cumulative_utility >= 0:
-                    each.path_utility = each.cumulative_utility + each.cur_len
-                else:
-                    each.path_utility = each.cumulative_utility
-            else:
-                each.path_utility = each.cumulative_utility
+            each.path_utility = each.cumulative_utility
+            # if self.strategy_type == "global" or self.strategy_type == "approach":
+            #     each.path_utility = each.cumulative_utility / each.cur_len
+            # elif self.strategy_type == "evade":
+            #     # 向能走的最远的方向躲避，避免进入死胡同
+            #     if each.cumulative_utility >= 0:
+            #         each.path_utility = each.cumulative_utility + each.cur_len
+            #     else:
+            #         each.path_utility = each.cumulative_utility
+            # else:
+            #     each.path_utility = each.cumulative_utility
         # Find the best path with the highest utility
         best_leaf = self.root.leaves[0]
         for leaf in self.root.leaves:

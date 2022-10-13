@@ -10,7 +10,7 @@ from environment import layout
 
 
 class utilityEstimator:
-    def __init__(self, map_name="originalClassic1"):
+    def __init__(self, map_name="originalClassic"):
         self.get_strategies(map_name=map_name)
 
     def get_args(self):
@@ -20,7 +20,7 @@ class utilityEstimator:
         parser.add_argument('--ghost_attractive_thr', type=int, default=34, help='Ghost attractive threshold.')
         parser.add_argument('--ghost_repulsive_thr', type=int, default=34, help='Ghost repulsive threshold.')
         parser.add_argument('--reward_coeff', type=float, default=1.0, help='Coefficient for the reward.')
-        parser.add_argument('--risk_coeff', type=float, default=1.0, help='Coefficient for the risk.')
+        parser.add_argument('--risk_coeff', type=float, default=0.0, help='Coefficient for the risk.')
         parser.add_argument('--randomness_coeff', type=float, default=0.0, help='Coefficient for the randomness.')
         parser.add_argument('--laziness_coeff', type=float, default=0.0, help='Coefficient for the laziness.')
         config = parser.parse_args(args=[])
@@ -36,6 +36,8 @@ class utilityEstimator:
             args.ignore_depth = 0
         elif strategy_name == "evade":
             args.depth = 3
+            args.risk_coeff = 1
+            args.reward_coeff = 0
         elif strategy_name == "energizer":
             args.depth = 10
         elif strategy_name == "approach":
@@ -75,17 +77,20 @@ class utilityEstimator:
 
     def get_Q(self, game_status):
 
-        strategies_name = ["local", "global", "energizer", "approach"]
-        strategy_Q = {"local": [], "global": [], "energizer": [], "approach": []}
+        strategies_name = ["local", "global", "evade", "energizer", "approach"]
+        strategy_Q = {"local": [], "global": [], "evade": [], "energizer": [], "approach": []}
         for strategy_name in strategies_name:
+            if strategy_name == "evade":
+                x = 0
             strategy = self.startegies[strategy_name]
             strategy.set_state(game_status)
+            strategy.strategy_type = strategy_name
             _, Q = strategy.nextDir(return_Q=True)
             strategy_Q[strategy_name] = Q
         return strategy_Q
 
 
-utility_estimator = utilityEstimator()
+utility_estimator = utilityEstimator(map_name="originalClassic1")
 
 
 def estimateUnitility_parallelize(game_status):
@@ -95,13 +100,12 @@ def estimateUnitility_parallelize(game_status):
 
 def estimateUnitility(filename):
     data = pd.read_pickle(filename)
-    utility_estimator = utilityEstimator()
 
     local_Q = []
     global_Q = []
     energizer_Q = []
     approach_Q = []
-
+    evade_Q = []
     game_status_ = []
     for i in range(len(data)):
         each = data.iloc[i]
@@ -116,23 +120,25 @@ def estimateUnitility(filename):
 
         }
         game_status_.append(game_status)
-    with multiprocessing.Pool(processes=16) as pool:
+    with multiprocessing.Pool(processes=12) as pool:
         Q = pool.map(partial(estimateUnitility_parallelize), game_status_)
     for q in Q:
         local_Q.append(q["local"])
         global_Q.append(q["global"])
+        evade_Q.append(q["evade"])
         energizer_Q.append(q["energizer"])
         approach_Q.append(q["approach"])
     data["local_Q"] = local_Q
     data["global_Q"] = global_Q
+    data["evade_Q"] = evade_Q
     data["energizer_Q"] = energizer_Q
     data["approach_Q"] = approach_Q
-    data.to_pickle("../Data/process/10_Q.pkl")
+    data.to_pickle("../Data/process/two_1_Q.pkl")
     pass
 
 
 if __name__ == '__main__':
-    filepath = "../Data/process/two_gameStatus.pkl"
+    filepath = "../Data/process/two_1.pkl"
     estimateUnitility(filepath)
 
     # data=pd.read_pickle("../Data/process/10trial_Q.pkl")

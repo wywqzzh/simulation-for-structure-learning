@@ -206,7 +206,7 @@ class twoStartegyAgents(StartegyAgents):
         is_evade = self.strategy_choice.is_evade(feature)
         if is_evade:
             strategy_name = "evade"
-            print("evade")
+            # print("evade")
         else:
             two_strategy_name = self.strategy_choice.get_two_strategy(feature)
             strategy_name = self.strategy_choice.get_single_strategy(feature)
@@ -215,19 +215,7 @@ class twoStartegyAgents(StartegyAgents):
                 self.strategy_choice.two_strategy_end = False
                 self.strategy_choice.strategy = None
                 strategy_name = self.strategy_choice.get_single_strategy(feature)
-                if two_strategy_name == "EA" and strategy_name == "approach":
-                    x = 0
-                if two_strategy_name == "GL" and strategy_name == "local":
-                    x = 0
-                if two_strategy_name == "LG" and strategy_name == "global":
-                    x = 0
-                two_strategy_name = self.strategy_choice.get_two_strategy(feature)
-                self.strategy_choice.two_strategy = two_strategy_name
-                self.strategy_choice.two_strategy_end = False
-                self.strategy_choice.strategy = None
-                strategy_name = self.strategy_choice.get_single_strategy(feature)
-                print("---:", self.strategy_choice.two_strategy, strategy_name)
-            print(self.strategy_choice.two_strategy, strategy_name)
+            # print(self.strategy_choice.two_strategy, strategy_name)
         strategy = self.startegies[strategy_name]
         strategy.set_state(game_status)
         _, Q = strategy.nextDir(return_Q=True)
