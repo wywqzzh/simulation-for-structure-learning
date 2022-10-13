@@ -19,7 +19,7 @@ def predict_strategy(weight):
     for i in range(len(weight)):
         if i != index and weight[i] > Max2:
             Max2 = weight[i]
-    if Max - Max2 < 0.2:
+    if Max - Max2 < 0.3:
         return "None"
     else:
         return strategy_dict[index]

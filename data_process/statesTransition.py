@@ -85,9 +85,9 @@ def direction_transition(x):
 
 
 def transition():
-    gram = "two"
-    start_num = 1
-    end_num = 2
+    gram = "bi"
+    start_num = 0
+    end_num = 10
 
     number = 1
 
@@ -150,7 +150,7 @@ def transition():
         ["file", "pacmanPos", "ghost1Pos", "ghost2Pos", "ifscared1", "ifscared2", "beans", "energizers", "Reward",
          "pacman_dir", "last_dir", "strategy", "strategy_utility"]]
 
-    data.to_pickle("../Data/process/two_1.pkl")
+    data.to_pickle("../Data/process/bi-gram.pkl")
 
 
 if __name__ == '__main__':

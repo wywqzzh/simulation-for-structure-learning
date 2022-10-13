@@ -8,6 +8,7 @@ sys.path.append("../Utils/")
 sys.path.append("../environment")
 from Utils.FileUtils import readAdjacentMap, readLocDistance, readAdjacentPath
 from environment import layout
+
 inf_val = 50  # 空数据的默认值（e.g., 地图中不存在水果时，Pacman和水果的距离就设置为50）
 
 
@@ -17,6 +18,7 @@ inf_val = 50  # 空数据的默认值（e.g., 地图中不存在水果时，Pacm
 class featureExtractor:
     def __init__(self, map_name=None):
         self.map_name = map_name
+        self.state_num = 1
         self.locs_df = readLocDistance("../Data/mapMsg/dij_distance_map_" + map_name + ".csv")
         self.adjacent_data = readAdjacentMap("../Data/mapMsg/adjacent_map_" + map_name + ".csv")
         self.layout = layout.getLayout(map_name)
@@ -405,8 +407,11 @@ class featureExtractor:
         numerical_cols = ["PG1", "PG2", "PE", "BW", "BB"]
         numerical_encode.columns = numerical_cols + ["GS1", "GS2", "ZBW", "ZBB"]
         numerical_encode = numerical_encode[["PG1", "GS1", "PG2", "GS2", "PE", "BW", "BB", "ZBW", "ZBB"]]
-        feature = numerical_encode.iloc[0].to_dict()
-        return feature
+        if self.state_num == 1:
+            feature = numerical_encode.iloc[0].to_dict()
+            return feature
+        else:
+            return numerical_encode
 
     def extract_feature(self, data):
         self.extractBehaviorFeature(data)
