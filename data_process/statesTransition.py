@@ -98,6 +98,7 @@ def transition():
     strategy = []
     strategy_utility = []
     files = []
+    # 整合 所有trail的ganme_status
     for i in range(start_num, end_num):
         with open("../Data/game_status/" + gram + "_" + str(i) + ".pkl", "rb") as file:
             data = pickle.load(file)

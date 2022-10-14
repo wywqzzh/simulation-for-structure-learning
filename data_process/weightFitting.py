@@ -607,12 +607,12 @@ class weightFitter:
                 pass
             data.append(df)
         data = pd.concat(data).reset_index(drop=True)
-        with open("../Data/process/two_1_weight_norm.pkl", "wb") as file:
+        with open("../Data/process/bi-gram_weight_norm.pkl", "wb") as file:
             pickle.dump(data, file)
 
 
 if __name__ == '__main__':
     filename = "../Data/10_trial_data_Omega.pkl"
-    filename = "../Data/process/two_1_Q.pkl"
+    filename = "../Data/process/bi-gram_Q.pkl"
     weight_fitter = weightFitter(filename, 5)
     weight_fitter.dynamicStrategyFitting()

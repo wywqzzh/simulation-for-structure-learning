@@ -6,6 +6,11 @@ import pandas as pd
 
 
 def predict_strategy(weight):
+    """
+    预测strategy ,如果最大weight的策略与次大weight的策略直接的weight差值小于0.2则表示该场景策略模糊，return "None"
+    :param weight: 
+    :return: 
+    """
     strategy_dict = {
         0: "global",
         1: "local",
@@ -19,20 +24,31 @@ def predict_strategy(weight):
     for i in range(len(weight)):
         if i != index and weight[i] > Max2:
             Max2 = weight[i]
-    if Max - Max2 < 0.3:
+    if Max - Max2 < 0.2:
         return "None"
     else:
         return strategy_dict[index]
 
 
 def strategy_equal_prediction(x, y):
-    if x in y:
+    """
+    判断预测strategy与真实strategy是否一致
+    :param x: 
+    :param y: 
+    :return: 
+    """
+    if x == y:
         return True
     else:
         return False
 
 
 def get_action_accuracy(df):
+    """
+    计算action的预测准确度
+    :param df: 
+    :return: 
+    """
     action_dir = {
         "left": 0,
         "right": 1,
@@ -46,6 +62,7 @@ def get_action_accuracy(df):
     pre_estimation = df[data_columns].values
 
     num_samples = len(df)
+    # 提取Q value
     agent_Q_value = np.zeros((num_samples, 4, len(agents_list)))
     for each_sample in range(num_samples):
         for each_agent in range(len(agents_list)):
@@ -63,13 +80,27 @@ def get_action_accuracy(df):
         exp_prob = exp_prob / np.sum(exp_prob)
 
         true_action = action_dir[df["pacman_dir"][i]]
-        prediction = np.random.choice([0, 1, 2, 3], p=exp_prob, size=1)[0]
+
+        # 如果最大值唯一，则选取最大值，如果最大值不唯一则从最大值中随机选择一个
+        MAX_index = np.argmax(exp_prob)
+        MAX = exp_prob[MAX_index]
+        indexs = [MAX_index]
+        MAXS = [MAX]
+        for i, e in enumerate(exp_prob):
+            if e == MAX and i != MAX_index:
+                indexs.append(i)
+        prediction = np.random.choice(indexs, p=[1 / len(indexs)] * len(indexs), size=1)[0]
         if prediction == true_action:
             num += 1
     print("action accuracy:", num / num_samples)
 
 
 def weight_normalize(weight):
+    """
+    normalize weight
+    :param weight: 
+    :return: 
+    """
     weight = np.array([np.array(w) for w in weight])
     weight_normaliztion = np.sum(weight, axis=1)
     for i in range(len(weight)):
@@ -80,9 +111,48 @@ def weight_normalize(weight):
     return weight_norm
 
 
+def MAX_equal_MAX2(x):
+    MAX_index = np.argmax(x)
+    MAX = x[MAX_index]
+    indexs = [MAX_index]
+    for i, e in enumerate(x):
+        if e == MAX and i != MAX_index:
+            indexs.append(i)
+    if len(indexs) > 1:
+        return True
+    else:
+        return False
+
+
+def drop_bad_context(data):
+    """
+    删除采用某策略，但该策略的Q value却不能确定运动方向的片段
+    :return: 
+    """
+    # 确定changepoint
+    true_strategy = data["strategy"]
+    cutoff_pts = list(np.where((true_strategy == true_strategy.shift()) == False)[0])[1:]
+    cutoff_pts.append(len(true_strategy))
+    cutoff_pts = list(zip([0] + list(cutoff_pts[:-1]), cutoff_pts))
+    data["vague"] = data["strategy_utility"].apply(lambda x: MAX_equal_MAX2(x))
+    for s, e in cutoff_pts:
+        temp = data["vague"][s:e]
+        temp = np.where(temp == True)[0]
+        rate = len(temp) / (e - s)
+        if rate >= 0.9:
+            print("rate:", rate)
+            data["predict_strategy"][s:e] = ["None"] * (e - s)
+
+    return data
+
+
 def strategy_accuracy():
-    with open("../Data/process/two_1_weight_norm.pkl", "rb") as file:
+    with open("../Data/process/bi-gram_weight_norm.pkl", "rb") as file:
         data = pickle.load(file)
+    
+    print(len(data))
+    import warnings
+    warnings.filterwarnings("ignore")
 
     data["weight_norm"] = weight_normalize(np.array(data["weight"]))
     get_action_accuracy(data)
@@ -95,6 +165,7 @@ def strategy_accuracy():
     # 
     # temp = np.array([temp, data["strategy_utility"]])
     data["predict_strategy"] = data["weight_norm"].apply(lambda x: predict_strategy(x))
+    data = drop_bad_context(data)
     index = np.where((data["predict_strategy"] != "None") == True)[0]
     data = data.iloc[index]
     new_data = pd.DataFrame()
@@ -105,12 +176,12 @@ def strategy_accuracy():
     data = new_data
 
     data["index"] = list(range(len(data)))
-    index = np.where((data["strategy"] == "energizer") == True)[0]
+    index = np.where((data["strategy"] == "global") == True)[0]
     temp_data = data[["strategy", "predict_strategy", "index"]].iloc[index]
     index = []
     for i in range(len(temp_data)):
         d = temp_data.iloc[i]
-        if "energizer" != d["predict_strategy"]:
+        if "global" != d["predict_strategy"]:
             index.append(d["index"])
     # index = temp_data["index"].iloc[index]
     temp_data = data.iloc[index]

@@ -102,7 +102,7 @@ def estimateUnitility_parallelize(game_status):
 
 def estimateUnitility(filename):
     data = pd.read_pickle(filename)
-
+    print(filename)
     local_Q = []
     global_Q = []
     energizer_Q = []
