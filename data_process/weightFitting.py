@@ -31,7 +31,7 @@ class weightFitter:
     fitting the strategy weight
     """
 
-    def __init__(self, filename, strategy_num=5, map_name="originalClassic1"):
+    def __init__(self, filename, strategy_num=5, map_name="originalClassic"):
         self.filename = filename
         self.strategy_num = strategy_num
         self.all_dir_list = ["left", "right", "up", "down"]
@@ -607,12 +607,12 @@ class weightFitter:
                 pass
             data.append(df)
         data = pd.concat(data).reset_index(drop=True)
-        with open("../Data/process/bi-gram_weight_norm.pkl", "wb") as file:
+        with open("../Data/process/one-gram_weight_norm.pkl", "wb") as file:
             pickle.dump(data, file)
 
 
 if __name__ == '__main__':
     filename = "../Data/10_trial_data_Omega.pkl"
-    filename = "../Data/process/bi-gram_Q.pkl"
+    filename = "../Data/process/one-gram_Q.pkl"
     weight_fitter = weightFitter(filename, 5)
     weight_fitter.dynamicStrategyFitting()

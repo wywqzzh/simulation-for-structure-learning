@@ -5,7 +5,7 @@ import numpy as np
 
 
 def stateToFeature():
-    data = pd.read_pickle("../Data/process/one_0.pkl")
+    data = pd.read_pickle("../Data/process/bi-gram_weight_norm.pkl")
 
     for i in range(len(data)):
         if data["energizers"][i] == []:
@@ -16,7 +16,7 @@ def stateToFeature():
     columns = list(data.columns)
     feature[columns] = data[columns]
 
-    feature.to_pickle("../Data/output/one_0_feature.pkl")
+    feature.to_pickle("../Data/output/bi-gram_feature.pkl")
 
 
 if __name__ == '__main__':
