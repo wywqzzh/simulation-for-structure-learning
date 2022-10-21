@@ -1,4 +1,5 @@
 import sys
+
 sys.path.append("../")
 from primitiveStrategy.Strategy import *
 from Utils.FileUtils import readAdjacentMap, readLocDistance, readRewardAmount, readAdjacentPath
@@ -135,12 +136,12 @@ def estimateUnitility(filename):
     data["evade_Q"] = evade_Q
     data["energizer_Q"] = energizer_Q
     data["approach_Q"] = approach_Q
-    data.to_pickle("../Data/process/one-gram_Q.pkl")
+    data.to_pickle("../Data/process/bi-20_Q.pkl")
     pass
 
 
 if __name__ == '__main__':
-    filepath = "../Data/process/one-gram.pkl"
+    filepath = "../Data/process/bi-20.pkl"
     estimateUnitility(filepath)
 
     # data=pd.read_pickle("../Data/process/10trial_Q.pkl")

@@ -55,7 +55,7 @@ class featureExtractor:
         if type == "left":
             adjacent = ((pacmanPos[0] - 1 - 1) % self.layout_w + 1, pacmanPos[1])
         elif type == "right":
-            adjacent = ((pacmanPos[0] - 1 + 1) % self.layout_w + 1, pacmanPos[1])
+            adjacent = ((pacmanPos[0] + 1 - 1) % self.layout_w + 1, pacmanPos[1])
         elif type == "up":
             adjacent = (pacmanPos[0], pacmanPos[1] - 1)
         elif type == "down":
@@ -86,7 +86,7 @@ class featureExtractor:
         if type == "left":
             adjacent = ((pacmanPos[0] - 1 - 1) % self.layout_w + 1, pacmanPos[1])
         elif type == "right":
-            adjacent = ((pacmanPos[0] - 1 + 1) % self.layout_w + 1, pacmanPos[1])
+            adjacent = ((pacmanPos[0] + 1 - 1) % self.layout_w + 1, pacmanPos[1])
         elif type == "up":
             adjacent = (pacmanPos[0], pacmanPos[1] - 1)
         elif type == "down":

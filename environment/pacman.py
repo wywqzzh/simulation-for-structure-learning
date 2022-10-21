@@ -742,7 +742,7 @@ def runGames(trial, layout, horizon, pacman, ghosts, display, numGames, record, 
     dead_sequences = []
     strategy_sequences = []
     strategy_utility_sequences = []
-    file_num = startNum
+    file_num = startNum+20
     #####################################
     import textDisplay
     for i in range(numGames):
@@ -753,8 +753,8 @@ def runGames(trial, layout, horizon, pacman, ghosts, display, numGames, record, 
         if beQuiet:
             # Suppress output and graphics
 
-            gameDisplay = textDisplay.NullGraphics()
-            # gameDisplay = display
+            # gameDisplay = textDisplay.NullGraphics()
+            gameDisplay = display
             rules.quiet = True
         else:
             gameDisplay = display

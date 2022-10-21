@@ -147,7 +147,7 @@ def drop_bad_context(data):
 
 
 def strategy_accuracy():
-    with open("../Data/process/one-gram_weight_norm.pkl", "rb") as file:
+    with open("../Data/process/bi-20_weight_norm.pkl", "rb") as file:
         data = pickle.load(file)
     
     print(len(data))

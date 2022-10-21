@@ -1,6 +1,6 @@
 import random
 import time
-
+# -p twoStartegyAgents -x 100 -n 100 -l originalClassic1 -b bi
 from game import Agent
 from game import Directions
 import numpy as np
@@ -52,6 +52,13 @@ def get_paramater_of_strategy(strategy_name, h, w):
 
 
 def change_pos(pos, numRow):
+    """
+    位置转换：伯克利地图中坐标为(x,y),x表示第几行(从0开始计数)，y表示倒数第几列(从0开始计数)，
+    将其转换为坐标为(x,y),x表示第几行(从1开始计数)，y表示正数第几列(从1开始计数)
+    :param pos: 
+    :param numRow: 
+    :return: 
+    """
     temp_pos = (pos[0] + 1, numRow - pos[1])
     return temp_pos
 
@@ -66,6 +73,7 @@ class StartegyAgents(Agent):
 
     def get_strategies(self, map_name):
         import layout
+        # 读取地图信息
         layout = layout.getLayout(map_name).layoutText
         h = len(layout)
         w = len(layout[0])
@@ -75,6 +83,7 @@ class StartegyAgents(Agent):
         self.intersection_data = pd.read_pickle("../Data/mapMsg/intersection_map_" + map_name + ".pkl")["pos"]
         reward_amount = readRewardAmount()
 
+        # 获取strategy的utility计算器
         local_strategy = Strategy("local", adjacent_data, locs_df, reward_amount,
                                   get_paramater_of_strategy("local", h, w))
         global_strategy = Strategy("global", adjacent_data, locs_df, reward_amount,
@@ -154,8 +163,6 @@ class singleStartegyAgents(StartegyAgents):
         self.last_strategy_name = "local"
 
     def getAction(self, state):
-        # TODO: approach会自杀
-
         legal = state.getLegalActions(self.index)
         if 'Stop' in legal:
             legal.remove('Stop')
@@ -164,16 +171,7 @@ class singleStartegyAgents(StartegyAgents):
 
         # choose strategy
         strategy_name = self.strategy_choice.get_strategy(feature)
-        # strategy_name = "approach"
-        # cur_pos = change_pos(state.data.agentStates[0].configuration.pos, self.layout_h)
-        # if cur_pos in self.intersection_data or strategy_name == "evade" or self.last_strategy_name == "evade":
-        #     # print("change strategy,", cur_pos)
-        #     self.last_strategy_name = strategy_name
-        # else:
-        #     strategy_name = self.last_strategy_name
-        # print(strategy_name)
         strategy = self.startegies[strategy_name]
-        # strategy = self.startegies["approach"]
         strategy.set_state(game_status)
         _, Q = strategy.nextDir(return_Q=True)
         choice = strategy.mapStatus["dir_list"][makeChoice(Q)]
@@ -181,9 +179,6 @@ class singleStartegyAgents(StartegyAgents):
         dir_dict = {"left": Directions.WEST, "right": Directions.EAST, "up": Directions.NORTH, "down": Directions.SOUTH
                     }
         move = dir_dict[choice]
-        # if strategy_name == "approach":
-        #     print(Q)
-        # print(strategy_name,Q)
         return move, strategy_name, Q
 
 
@@ -199,23 +194,29 @@ class twoStartegyAgents(StartegyAgents):
         legal = state.getLegalActions(self.index)
         if 'Stop' in legal:
             legal.remove('Stop')
-        
+
         game_status, feature = self.state_to_feature(state)
-        # feature={'PG1': 1, 'GS1': 0, 'PG2': 2, 'GS2': 0, 'PE': 1, 'BW': 0, 'BB': 1, 'ZBW': 1, 'ZBB': 0}
-        # choose strategy
+
+        # 先判断是否需要evade，需要则evade
         is_evade = self.strategy_choice.is_evade(feature)
         if is_evade:
             strategy_name = "evade"
             # print("evade")
         else:
+            # 若不需要evade则判断当前的两级策略
             two_strategy_name = self.strategy_choice.get_two_strategy(feature)
+            # 根据两级策略选一级策略
             strategy_name = self.strategy_choice.get_single_strategy(feature)
             if self.strategy_choice.two_strategy_end == True:
+                # 若两级策略已经完成，则进行下一个两级策略的选取
                 self.strategy_choice.two_strategy = two_strategy_name
                 self.strategy_choice.two_strategy_end = False
                 self.strategy_choice.strategy = None
                 strategy_name = self.strategy_choice.get_single_strategy(feature)
-            # print(self.strategy_choice.two_strategy, strategy_name)
+
+            if self.strategy_choice.two_strategy == "EL":
+                x = 0
+                print(self.strategy_choice.two_strategy, ":", self.strategy_choice.strategy)
         strategy = self.startegies[strategy_name]
         strategy.set_state(game_status)
         _, Q = strategy.nextDir(return_Q=True)
