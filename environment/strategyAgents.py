@@ -7,7 +7,7 @@ import numpy as np
 from primitiveStrategy.Strategy import *
 from primitiveStrategy.simpleGlobalStrategy import simpleGlobalStrategy
 from Utils.FileUtils import readAdjacentMap, readLocDistance, readRewardAmount, readAdjacentPath
-from strategyPolicyTable import strategyPolicyTable, twoStrategyPolicyTable
+from strategyPolicyTable import strategyPolicyTable, twoStrategyPolicyTable, triStrategyPolicyTable
 from copy import deepcopy
 from Utils.ComputationUtils import scaleOfNumber, makeChoice
 import pandas as pd
@@ -40,6 +40,10 @@ def get_paramater_of_strategy(strategy_name, h, w):
         args.ignore_depth = 0
     elif strategy_name == "evade":
         args.depth = 3
+        args.risk_coeff = 1
+        args.reward_coeff = 1
+    elif strategy_name == "V":
+        args.depth = 10
         args.risk_coeff = 1
         args.reward_coeff = 0
     elif strategy_name == "energizer":
@@ -94,11 +98,11 @@ class StartegyAgents(Agent):
                                       get_paramater_of_strategy("energizer", h, w))
         approach_strategy = Strategy("approach", adjacent_data, locs_df, reward_amount,
                                      get_paramater_of_strategy("approach", h, w))
-        counterattack_strategy = Strategy("counterattack", adjacent_data, locs_df, reward_amount,
+        counterattack_strategy = Strategy("V", adjacent_data, locs_df, reward_amount,
                                           get_paramater_of_strategy("approach", h, w))
         self.startegies = {
             "local": local_strategy, "global": global_strategy, "evade": evade_strategy,
-            "energizer": energizer_strategy, "approach": approach_strategy, "counterattack": counterattack_strategy
+            "energizer": energizer_strategy, "approach": approach_strategy, "V": counterattack_strategy
         }
 
     def state_to_feature(self, state):
@@ -213,10 +217,43 @@ class twoStartegyAgents(StartegyAgents):
                 self.strategy_choice.two_strategy_end = False
                 self.strategy_choice.strategy = None
                 strategy_name = self.strategy_choice.get_single_strategy(feature)
+        strategy = self.startegies[strategy_name]
+        strategy.set_state(game_status)
+        _, Q = strategy.nextDir(return_Q=True)
+        choice = strategy.mapStatus["dir_list"][makeChoice(Q)]
 
-            if self.strategy_choice.two_strategy == "EL":
-                x = 0
-                print(self.strategy_choice.two_strategy, ":", self.strategy_choice.strategy)
+        dir_dict = {"left": Directions.WEST, "right": Directions.EAST, "up": Directions.NORTH, "down": Directions.SOUTH
+                    }
+        move = dir_dict[choice]
+        return move, strategy_name, Q
+
+
+class triStartegyAgents(StartegyAgents):
+    def __init__(self, map_name="smallGrid", index=0, **arg):
+        super(triStartegyAgents, self).__init__(map_name)
+        self.strategy_choice = triStrategyPolicyTable()
+        self.featureExtractor = featureExtractor(map_name)
+
+    def getAction(self, state):
+        # TODO: approach会自杀
+
+        legal = state.getLegalActions(self.index)
+        if 'Stop' in legal:
+            legal.remove('Stop')
+
+        game_status, feature = self.state_to_feature(state)
+
+        # 先判断是否需要evade，需要则evade
+        tri_strategy_name = self.strategy_choice.get_tri_strategy(feature)
+        strategy_name = self.strategy_choice.get_single_strategy(feature)
+        if self.strategy_choice.tri_strategy_end == True:
+            # 若两级策略已经完成，则进行下一个两级策略的选取
+            self.strategy_choice.tri_strategy = tri_strategy_name
+            self.strategy_choice.tri_strategy_end = False
+            self.strategy_choice.strategy = None
+            strategy_name = self.strategy_choice.get_single_strategy(feature)
+
+        print(self.strategy_choice.tri_strategy, self.strategy_choice.strategy)
         strategy = self.startegies[strategy_name]
         strategy.set_state(game_status)
         _, Q = strategy.nextDir(return_Q=True)

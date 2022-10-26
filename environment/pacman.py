@@ -54,7 +54,7 @@ sys.path.append("../")
 import random
 import os
 import warnings
-from strategyAgents import singleStartegyAgents, twoStartegyAgents
+from strategyAgents import singleStartegyAgents, twoStartegyAgents,triStartegyAgents
 
 warnings.filterwarnings('ignore')
 
@@ -623,6 +623,8 @@ def readCommand(argv):
         pacman = singleStartegyAgents(options.layout, 0, **agentOpts)
     elif options.pacman == "twoStartegyAgents":
         pacman = twoStartegyAgents(options.layout, 0, **agentOpts)  # Instantiate Pacman with agentArgs
+    elif options.pacman == "triStartegyAgents":
+        pacman = triStartegyAgents(options.layout, 0, **agentOpts)
     else:
         pass
     args['pacman'] = pacman
@@ -742,7 +744,7 @@ def runGames(trial, layout, horizon, pacman, ghosts, display, numGames, record, 
     dead_sequences = []
     strategy_sequences = []
     strategy_utility_sequences = []
-    file_num = startNum+20
+    file_num = startNum + 20
     #####################################
     import textDisplay
     for i in range(numGames):

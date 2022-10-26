@@ -82,7 +82,7 @@ class Strategy:
                 exact_reward += self.mapStatus["reward_amount"]["bean"]
                 existing_beans.remove(cur_position)
         # energizer reward
-        if self.strategy_type == "energizer" or self.strategy_type == "counterattack":
+        if self.strategy_type == "energizer" or self.strategy_type == "evade":
             if isinstance(existing_energizers, float) or cur_position not in existing_energizers:
                 exact_reward += 0.0
             elif cur_position in existing_energizers:
@@ -128,7 +128,7 @@ class Strategy:
             # print("eaten by 1:", exact_risk)
         if ifscared2 == 0 and cur_position == self.gameStatus["ghost_data"][1]:
             self.is_eaten = True
-            if self.strategy_type == "evade":
+            if self.strategy_type == "evade" :
                 exact_risk = -self.mapStatus["reward_amount"]["eaten"]
             # print("eaten by 2:", exact_risk)
         return exact_risk
