@@ -54,7 +54,8 @@ sys.path.append("../")
 import random
 import os
 import warnings
-from strategyAgents import singleStartegyAgents, twoStartegyAgents,triStartegyAgents
+from strategyAgents import singleStartegyAgents, twoStartegyAgents, triStartegyAgents
+from mapMsg.endgame import eEA
 
 warnings.filterwarnings('ignore')
 
@@ -597,8 +598,8 @@ def readCommand(argv):
         random.seed('cs188')
 
     # Choose a layout
-    args['layout'] = layout.getLayout(options.layout)
-    if args['layout'] == None:
+    args['Layout'] = layout.getLayout(options.layout)
+    if args['Layout'] == None:
         raise Exception("The layout " + options.layout + " cannot be found")
 
     args['horizon'] = options.maxHorizon
@@ -724,7 +725,7 @@ def replayGame(layout, actions, display):
     display.finish()
 
 
-def runGames(trial, layout, horizon, pacman, ghosts, display, numGames, record, numTraining=0, catchExceptions=False,
+def runGames(trial, Layout, horizon, pacman, ghosts, display, numGames, record, numTraining=0, catchExceptions=False,
              timeout=30, agentType="one", startNum=0):
     import __main__
     __main__.__dict__['_display'] = display
@@ -744,25 +745,33 @@ def runGames(trial, layout, horizon, pacman, ghosts, display, numGames, record, 
     dead_sequences = []
     strategy_sequences = []
     strategy_utility_sequences = []
-    file_num = startNum + 20
+    file_num = startNum+10
     #####################################
     import textDisplay
     for i in range(numGames):
         print(i)
+        flag = True
+        while flag:
+            try:
+                eEA()
+                flag = False
+            except:
+                flag = True
+        Layout = layout.getLayout("originalClassic_test")
         # if i % 10 == 0:
         #     print("numGames played: [{}/{}]".format(i, numGames))
         beQuiet = i < numTraining
         if beQuiet:
             # Suppress output and graphics
 
-            # gameDisplay = textDisplay.NullGraphics()
-            gameDisplay = display
+            gameDisplay = textDisplay.NullGraphics()
+            # gameDisplay = display
             rules.quiet = True
         else:
             gameDisplay = display
             # gameDisplay = textDisplay.NullGraphics()
             rules.quiet = False
-        game = rules.newGame(layout, horizon, pacman, ghosts,
+        game = rules.newGame(Layout, horizon, pacman, ghosts,
                              gameDisplay, beQuiet, catchExceptions)
         #####################################
         state_sequence, action_sequence, reward_sequence, dead_sequence, strategy_sequence, strategy_utility_sequence = game.run()

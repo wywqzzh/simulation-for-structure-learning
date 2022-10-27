@@ -405,7 +405,7 @@ class triStrategyPolicyTable:
             elif state["PE"] == 0:
                 self.num = 2
                 self.strategy = "energizer"
-            elif state["GS1"] == 2 or state["GS2"] == 2:
+            elif state["GS1"] == 2 and state["GS2"] == 2:
                 self.strategy = "approach"
                 self.num = 3
             else:

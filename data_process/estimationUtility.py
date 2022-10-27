@@ -40,6 +40,10 @@ class utilityEstimator:
         elif strategy_name == "evade":
             args.depth = 3
             args.risk_coeff = 1
+            args.reward_coeff = 1
+        elif strategy_name == "V":
+            args.depth = 10
+            args.risk_coeff = 1
             args.reward_coeff = 0
         elif strategy_name == "energizer":
             args.depth = 10
@@ -136,12 +140,12 @@ def estimateUnitility(filename):
     data["evade_Q"] = evade_Q
     data["energizer_Q"] = energizer_Q
     data["approach_Q"] = approach_Q
-    data.to_pickle("../Data/process/bi-20_Q.pkl")
+    data.to_pickle("../Data/process/tri-gram_Q.pkl")
     pass
 
 
 if __name__ == '__main__':
-    filepath = "../Data/process/bi-20.pkl"
+    filepath = "../Data/process/tri-gram.pkl"
     estimateUnitility(filepath)
 
     # data=pd.read_pickle("../Data/process/10trial_Q.pkl")

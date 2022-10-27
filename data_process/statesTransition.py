@@ -86,8 +86,8 @@ def direction_transition(x):
 
 def transition():
     gram = "bi"
-    start_num = 20
-    end_num = 21
+    start_num = 10
+    end_num = 20
 
     number = 1
 
@@ -109,7 +109,7 @@ def transition():
                 dead += data["deads"][j]
                 strategy += data["strategy_sequences"][j]
                 strategy_utility += data["strategy_utility_sequences"][j]
-                files += ["biStrategy_" + str(number)] * len(data["deads"][j])
+                files += [gram + "Strategy_" + str(number)] * len(data["deads"][j])
                 number += 1
     data = {
         "state": state,
@@ -151,7 +151,7 @@ def transition():
         ["file", "pacmanPos", "ghost1Pos", "ghost2Pos", "ifscared1", "ifscared2", "beans", "energizers", "Reward",
          "pacman_dir", "last_dir", "strategy", "strategy_utility"]]
 
-    data.to_pickle("../Data/process/bi-20.pkl")
+    data.to_pickle("../Data/process/tri-gram.pkl")
 
 
 if __name__ == '__main__':

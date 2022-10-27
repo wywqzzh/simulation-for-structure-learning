@@ -253,7 +253,7 @@ class triStartegyAgents(StartegyAgents):
             self.strategy_choice.strategy = None
             strategy_name = self.strategy_choice.get_single_strategy(feature)
 
-        print(self.strategy_choice.tri_strategy, self.strategy_choice.strategy)
+        # print(self.strategy_choice.tri_strategy, self.strategy_choice.strategy)
         strategy = self.startegies[strategy_name]
         strategy.set_state(game_status)
         _, Q = strategy.nextDir(return_Q=True)
